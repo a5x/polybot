@@ -1,6 +1,12 @@
+import os
 import discord
 from discord.ext import commands
 import asyncio
+
+# Charger le token depuis les variables d'environnement
+TOKEN = os.getenv("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GZuXsR.vstOuQTcHc5JS8ac1K9PL5GH-cZCugB-0HO_7s")
+if not TOKEN:
+    raise RuntimeError("Le token DISCORD_TOKEN n'est pas défini dans les variables d'environnement.")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -8,7 +14,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ✅ Nom des cogs à charger
+# Nom des cogs à charger
 COGS = [
     "cogs.jeux",
     "cogs.economie",
@@ -46,41 +52,50 @@ async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
     await bot.tree.sync()
     print("✅ Slash commands ON")
-    print("✅ Bot prêt. : [reload] [stop] tape ca dans le cmd pour fast restart ou stop le bot")
+    print("✅ Bot prêt. Utilise 'reload' ou 'stop' en console pour gérer le bot.")
 
 async def load_extensions():
     for ext in COGS:
         try:
             await bot.load_extension(ext)
-            print(f"✅ Code chargée : {ext}")
+            print(f"✅ Cog chargée : {ext}")
         except commands.errors.ExtensionAlreadyLoaded:
             await bot.reload_extension(ext)
-            print(f"♻️ Code rechargée : {ext}")
+            print(f"♻️ Cog rechargée : {ext}")
 
 async def cmd_input():
+    """
+    Gestion de la console stdin. Ignore l'EOF pour éviter les crashs sur Railway.
+    """
+    loop = asyncio.get_event_loop()
     while True:
-        cmd = await asyncio.get_event_loop().run_in_executor(None, input, "> ")
-        cmd = cmd.strip().lower()
+        try:
+            cmd = await loop.run_in_executor(None, input, "> ")
+        except EOFError:
+            # Plus de stdin disponible, on sort proprement
+            break
 
+        cmd = cmd.strip().lower()
         if cmd == "reload":
             print("♻️ Relancement des cogs...")
             await load_extensions()
             await bot.tree.sync()
-            print("✅ Tous les cogs rechargés et slash fonctionne.")
+            print("✅ Tous les cogs rechargés et slash commands synchronisées.")
         elif cmd == "stop":
-            print("Fermeture du bot...")
+            print("🔌 Arrêt du bot...")
             await bot.close()
             break
         else:
-            print("Commande inconnue. Utilise : reload / stop")
+            print("❓ Commande inconnue. Utilise : reload / stop")
 
 async def main():
-    async with bot:
-        # Lancer le bot + la lecture du CMD en parallèle pour quil marche
-        await asyncio.gather(
-            load_extensions(),
-            bot.start("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GZuXsR.vstOuQTcHc5JS8ac1K9PL5GH-cZCugB-0HO_7s"),
-            cmd_input(),
-        )
+    # Charger les cogs avant de démarrer le bot
+    await load_extensions()
+    # Démarrer le bot et la lecture console en parallèle
+    await asyncio.gather(
+        bot.start(TOKEN),
+        cmd_input()
+    )
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
