@@ -79,7 +79,7 @@ async def main():
         # Lancer le bot + la lecture du CMD en parallèle pour quil marche
         await asyncio.gather(
             load_extensions(),
-            bot.start("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GZuXsR.vstOuQTcHc5JS8ac1K9PL5GH-cZCugB-0HO_7s"),
+            bot.start("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GhGyD6.1XdW4hEEUIJKLjcVN8rz2hDzqJkocOfYdSFFKc"),
             cmd_input(),
         )
 
