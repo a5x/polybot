@@ -1,0 +1,19 @@
+# Client Discord
+discord.py==2.4.0
+
+# Chargement de variables d’environnement (.env)
+python-dotenv==1.0.0
+
+# Requêtes HTTP / appels API
+requests==2.31.0
+aiohttp==3.9.4
+
+# Gestion date/heure (si tu l’utilises)
+python-dateutil==2.8.2
+pytz==2025.1
+
+# Ajoute ici tout autre module externe que tu importes dans tes cogs
+# Par exemple :
+# beautifulsoup4==4.12.2
+# youtube_dl==2025.7.1
+# pymongo==4.4.0
