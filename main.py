@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 import asyncio
@@ -46,27 +47,26 @@ async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
     await bot.tree.sync()
     print("✅ Slash commands ON")
-    print("✅ Bot prêt. : [reload] [stop] tape ca dans le cmd pour fast restart ou stop le bot")
+    print("✅ Bot prêt. Tape `reload` ou `stop` dans le terminal pour recharger/arrêter le bot.")
 
 async def load_extensions():
     for ext in COGS:
         try:
             await bot.load_extension(ext)
-            print(f"✅ Code chargée : {ext}")
+            print(f"✅ Cog chargée : {ext}")
         except commands.errors.ExtensionAlreadyLoaded:
             await bot.reload_extension(ext)
-            print(f"♻️ Code rechargée : {ext}")
+            print(f"♻️ Cog rechargée : {ext}")
 
 async def cmd_input():
     while True:
         cmd = await asyncio.get_event_loop().run_in_executor(None, input, "> ")
         cmd = cmd.strip().lower()
-
         if cmd == "reload":
             print("♻️ Relancement des cogs...")
             await load_extensions()
             await bot.tree.sync()
-            print("✅ Tous les cogs rechargés et slash fonctionne.")
+            print("✅ Tous les cogs rechargés.")
         elif cmd == "stop":
             print("Fermeture du bot...")
             await bot.close()
@@ -75,12 +75,18 @@ async def cmd_input():
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
+    # Récupère le token depuis la variable d'env
+    token = os.environ.get("DISCORD_TOKEN")
+    if not token:
+        raise RuntimeError("⚠️ La variable d'environnement DISCORD_TOKEN n'est pas définie.")
+    
+    # Lance les cogs puis le bot et la boucle de commandes concurrently
     async with bot:
-        # Lancer le bot + la lecture du CMD en parallèle pour quil marche
+        await load_extensions()
         await asyncio.gather(
-            load_extensions(),
-            bot.start("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GhGyD6.1XdW4hEEUIJKLjcVN8rz2hDzqJkocOfYdSFFKc"),
+            bot.start(token),
             cmd_input(),
         )
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
