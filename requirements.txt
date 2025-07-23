@@ -12,6 +12,9 @@ aiohttp==3.9.4
 python-dateutil==2.8.2
 pytz==2025.1
 beautifulsoup4==4.12.2
+PSNAWP==3.0.0
+
+
 # Ajoute ici tout autre module externe que tu importes dans tes cogs
 # Par exemple :
 # beautifulsoup4==4.12.2
