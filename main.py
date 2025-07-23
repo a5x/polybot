@@ -51,7 +51,6 @@ async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
     await bot.tree.sync()
     print("✅ Slash commands ON")
-    print("✅ Bot prêt. Tape `reload` ou `stop` dans le terminal pour recharger/arrêter le bot.")
 
 async def load_extensions():
     for ext in COGS:
@@ -62,35 +61,22 @@ async def load_extensions():
             await bot.reload_extension(ext)
             print(f"♻️ Cog rechargée : {ext}")
 
-async def cmd_input():
-    while True:
-        cmd = await asyncio.get_event_loop().run_in_executor(None, input, "> ")
-        cmd = cmd.strip().lower()
-        if cmd == "reload":
-            print("♻️ Relancement des cogs...")
-            await load_extensions()
-            await bot.tree.sync()
-            print("✅ Tous les cogs rechargés.")
-        elif cmd == "stop":
-            print("Fermeture du bot...")
-            await bot.close()
-            break
-        else:
-            print("Commande inconnue. Utilise : reload / stop")
-
 async def main():
     # Récupération du token depuis la variable d'environnement
     token = os.environ.get("DISCORD_TOKEN")
     if not token:
         raise RuntimeError("⚠️ La variable d'environnement DISCORD_TOKEN n'est pas définie.")
 
-    # Chargement des cogs puis démarrage du bot et de l'interface CLI
-    async with bot:
-        await load_extensions()
-        await asyncio.gather(
-            bot.start(token),
-            cmd_input(),
-        )
+    # Chargement des cogs
+    await load_extensions()
+
+    # Démarrage du bot
+    await bot.start(token)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Arrêt manuel reçu, fermeture du bot...")
+        # Nettoyage si besoin
+        sys.exit(0)
