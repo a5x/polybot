@@ -11,7 +11,7 @@ aiohttp==3.9.4
 # Gestion date/heure (si tu l’utilises)
 python-dateutil==2.8.2
 pytz==2025.1
-
+beautifulsoup4==4.12.2
 # Ajoute ici tout autre module externe que tu importes dans tes cogs
 # Par exemple :
 # beautifulsoup4==4.12.2
