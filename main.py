@@ -1,7 +1,11 @@
 import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
+
+# Charge les variables d'environnement depuis .env si présent
+load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -9,7 +13,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ✅ Nom des cogs à charger
+# ✅ Liste des cogs à charger
 COGS = [
     "cogs.jeux",
     "cogs.economie",
@@ -75,12 +79,12 @@ async def cmd_input():
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
-    # Récupère le token depuis la variable d'env
+    # Récupération du token depuis la variable d'environnement
     token = os.environ.get("DISCORD_TOKEN")
     if not token:
         raise RuntimeError("⚠️ La variable d'environnement DISCORD_TOKEN n'est pas définie.")
-    
-    # Lance les cogs puis le bot et la boucle de commandes concurrently
+
+    # Chargement des cogs puis démarrage du bot et de l'interface CLI
     async with bot:
         await load_extensions()
         await asyncio.gather(
