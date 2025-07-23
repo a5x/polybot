@@ -19,9 +19,9 @@ def load_status():
 class StatusBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.apply_saved_status()
 
-    def apply_saved_status(self):
+    async def setup_hook(self) -> None:
+        # Appelé après l'ajout du cog, contexte asynchrone disponible
         data = load_status()
         status_map = {
             "online": discord.Status.online,
@@ -29,10 +29,10 @@ class StatusBot(commands.Cog):
             "dnd": discord.Status.dnd,
             "offline": discord.Status.invisible
         }
-        self.bot.loop.create_task(self.bot.change_presence(
+        await self.bot.change_presence(
             status=status_map.get(data["status"], discord.Status.online),
             activity=discord.Game(name=data["activity"])
-        ))
+        )
 
     @app_commands.command(name="statusbot", description="Change le statut du bot et son activité (admin uniquement).")
     @app_commands.describe(
@@ -67,8 +67,13 @@ class StatusBot(commands.Cog):
         save_status(status.value, activity)
 
         await interaction.followup.send(
-            f" Statut changé ✅ en **{status.name}** avec l'activité : *{activity}*"
+            f"Statut changé ✅ en **{status.name}** avec l'activité : *{activity}*"
         )
 
 async def setup(bot):
-    await bot.add_cog(StatusBot(bot))
+    # setup_hook nécessite bot.add_cog via cog's async setup
+    cog = StatusBot(bot)
+    bot.add_cog(cog)
+    # si discord.py >=2.4, appeler setup_hook manuellement:
+    if hasattr(cog, 'setup_hook'):
+        await cog.setup_hook()
