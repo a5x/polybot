@@ -268,7 +268,7 @@ class Psn(commands.Cog):
     async def on_ready(self):
         await self.bot.change_presence(
             status=discord.Status.online,
-            activity=discord.Game("Surveiller les profils PSN")
+            activity=discord.Game("Polyvaland ! s/O 667")
         )
 
     def save_counts(self):
