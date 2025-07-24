@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
@@ -46,7 +48,7 @@ async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
     await bot.tree.sync()
     print("✅ Slash commands ON")
-    print("✅ Bot prêt. : [reload] [stop] tape ca dans le cmd pour fast restart ou stop le bot")
+    print("✅ Bot prêt. : [reload] [stop] tape ça dans le cmd pour fast restart ou stop le bot")
 
 async def load_extensions():
     for ext in COGS:
@@ -75,12 +77,17 @@ async def cmd_input():
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
+    # Récupère ton token depuis la variable d'environnement DISCORD_TOKEN
+    token = os.getenv("DISCORD_TOKEN")
+    if not token:
+        raise RuntimeError("Le token Discord n'est pas défini : vérifie ton .env")
+
     async with bot:
-        # Lancer le bot + la lecture du CMD en parallèle pour quil marche
         await asyncio.gather(
             load_extensions(),
-            bot.start("ODM1MTk1ODQ2NzAxNzQ0MTQ4.GhGyD6.1XdW4hEEUIJKLjcVN8rz2hDzqJkocOfYdSFFKc"),
+            bot.start(token),
             cmd_input(),
         )
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
