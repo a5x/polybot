@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
+from keep_alive import keep_alive
+keep_alive()
 
 
 # Démarre le serveur Flask pour recevoir les pings
