@@ -7,10 +7,10 @@ import asyncio
 from keep_alive import keep_alive
 
 # Démarre le serveur Flask pour recevoir les pings
+load_dotenv()
 keep_alive()
 
 # Charge les variables d'environnement depuis .env
-load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
