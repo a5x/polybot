@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
-from keep_alive import keep_alive
+
 
 # Démarre le serveur Flask pour recevoir les pings
 load_dotenv()
-keep_alive()
+
 
 # Charge les variables d'environnement depuis .env
 
