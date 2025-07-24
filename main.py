@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
-from keep_alive import keep_alive
+
 
 # Charge les variables d'environnement depuis .env
 load_dotenv()
