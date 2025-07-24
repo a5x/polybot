@@ -1,8 +1,12 @@
 import os
+import sys
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
+
+# Charge les variables d'environnement depuis .env
+load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -60,34 +64,44 @@ async def load_extensions():
             print(f"♻️ Code rechargée : {ext}")
 
 async def cmd_input():
+    loop = asyncio.get_event_loop()
     while True:
-        cmd = await asyncio.get_event_loop().run_in_executor(None, input, "> ")
-        cmd = cmd.strip().lower()
+        try:
+            cmd = await loop.run_in_executor(None, input, "> ")
+        except EOFError:
+            print("📭 Stdin fermé, arrêt de la boucle cmd_input.")
+            break
 
+        cmd = cmd.strip().lower()
         if cmd == "reload":
             print("♻️ Relancement des cogs...")
             await load_extensions()
             await bot.tree.sync()
             print("✅ Tous les cogs rechargés et slash fonctionne.")
         elif cmd == "stop":
-            print("Fermeture du bot...")
+            print("Fermeture du bot…")
             await bot.close()
             break
         else:
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
-    # Récupère ton token depuis la variable d'environnement DISCORD_TOKEN
     token = os.getenv("DISCORD_TOKEN")
     if not token:
         raise RuntimeError("Le token Discord n'est pas défini : vérifie ton .env")
 
+    # Prépare les tâches à lancer
+    tasks = [
+        load_extensions(),
+        bot.start(token),
+    ]
+
+    # Ne lance la boucle CLI que si stdin est un terminal interactif
+    if sys.stdin.isatty():
+        tasks.append(cmd_input())
+
     async with bot:
-        await asyncio.gather(
-            load_extensions(),
-            bot.start(token),
-            cmd_input(),
-        )
+        await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     asyncio.run(main())
