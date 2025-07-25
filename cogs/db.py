@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
 import base64
@@ -11,44 +12,43 @@ REPO = "a5x/polybot"
 FILE_PATH = "data/psn_db.json"
 BRANCH = "main"
 
-class DBCommand(commands.Cog):
-    def __init__(self, bot):
+class PSNDBCog(commands.Cog):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @discord.slash_command(name="db", description="Ajoute une entrée dans psn_db.json")
-    async def db(self, ctx, pseudo: str, date: str):
-        await ctx.defer()
+    @app_commands.command(name="db", description="Ajoute un PSN dans psn_db.json")
+    @app_commands.describe(pseudo="Le pseudo PSN", dateval="Date et emoji (ex: 2006 <:2k6:…>)")
+    async def db(self, interaction: discord.Interaction, pseudo: str, dateval: str):
+        await interaction.response.defer()
 
-        # 📥 Récupération du contenu du fichier
+        # Récupération du fichier depuis GitHub
         url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}?ref={BRANCH}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
         res = requests.get(url, headers=headers)
         if res.status_code != 200:
-            return await ctx.respond("❌ Erreur lors de la lecture de psn_db.json sur GitHub.")
+            return await interaction.followup.send("❌ Impossible de lire le fichier JSON sur GitHub.")
 
         data = res.json()
         sha = data["sha"]
-        current_content = json.loads(base64.b64decode(data["content"]).decode())
+        content = json.loads(base64.b64decode(data["content"]).decode())
 
-        # 🧱 Ajout de la nouvelle entrée en bas
-        new_entry = OrderedDict(current_content)
-        new_entry[pseudo] = date
+        # On met à jour, en conservant l’ordre
+        new_content = OrderedDict(content)
+        new_content[pseudo] = dateval
 
-        # 🧬 Encodage du nouveau contenu
-        new_content = base64.b64encode(json.dumps(new_entry, indent=2, ensure_ascii=False).encode()).decode()
+        encoded = base64.b64encode(json.dumps(new_content, indent=2, ensure_ascii=False).encode()).decode()
 
-        # 📤 Commit sur GitHub
-        update_res = requests.put(url, headers=headers, json={
-            "message": f"Ajout de {pseudo} dans psn_db.json",
-            "content": new_content,
+        update = requests.put(url, headers=headers, json={
+            "message": f"Ajout de {pseudo} via Discord",
+            "content": encoded,
             "sha": sha,
             "branch": BRANCH
         })
 
-        if update_res.status_code in [200, 201]:
-            await ctx.respond(f"✅ L'entrée `{pseudo}` → `{date}` a été ajoutée avec succès !")
+        if update.status_code in (200, 201):
+            await interaction.followup.send(f"✅ `{pseudo}` → `{dateval}` ajouté avec succès !")
         else:
-            await ctx.respond("❌ Échec de la mise à jour du fichier sur GitHub.")
+            await interaction.followup.send("❌ Échec de la mise à jour GitHub.")
 
-def setup(bot):
-    bot.add_cog(DBCommand(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(PSNDBCog(bot))
