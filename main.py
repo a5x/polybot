@@ -51,6 +51,7 @@ COGS = [
     "cogs.instagramprofile",
     "cogs.psn",
     "cogs.psn_embed",
+    "cogs.db",
 ]
 
 @bot.event
