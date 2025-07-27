@@ -93,9 +93,10 @@ async def cmd_input():
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
-    token = os.getenv("DISCORD_TOKEN, DISCORD_TOKEN2")
-    if not token:
-        raise RuntimeError("Le token Discord n'est pas défini : vérifie ton .env")
+    token1 = os.getenv("DISCORD_TOKEN")
+    token2 = os.getenv("DISCORD_TOKEN2")
+    if not token1 or not token2:
+        raise RuntimeError("Il faut définir DISCORD_TOKEN et DISCORD_TOKEN2 dans le .env")
 
     # Prépare les tâches à lancer
     tasks = [
