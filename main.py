@@ -93,7 +93,7 @@ async def cmd_input():
             print("Commande inconnue. Utilise : reload / stop")
 
 async def main():
-    token = os.getenv("DISCORD_TOKEN")
+    token = os.getenv("DISCORD_TOKEN, DISCORD_TOKEN2")
     if not token:
         raise RuntimeError("Le token Discord n'est pas défini : vérifie ton .env")
 
