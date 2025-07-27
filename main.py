@@ -102,19 +102,20 @@ async def main():
     if not token1 or not token2:
         raise RuntimeError("Il faut définir DISCORD_TOKEN et DISCORD_TOKEN2 dans le .env")
 
-    # On prépare les tâches : loader les extensions et démarrer chaque bot
-    tasks = [
-        load_extensions(bot1),
-        load_extensions(bot2),
-        bot1.start(token1),
-        bot2.start(token2),
-    ]
+    # 1️⃣ Charge les cogs sur les deux bots
+    await load_extensions(bot1)
+    await load_extensions(bot2)
 
-    # Si on est en terminal interactif, on ajoute la boucle de commande
+    # 2️⃣ Synchronise les slash commands pour chacun
+    await bot1.tree.sync()
+    print("✅ Slash commands de Bot1 synchronisées")
+    await bot2.tree.sync()
+    print("✅ Slash commands de Bot2 synchronisées")
+
+    # 3️⃣ Lance les deux bots en parallèle
+    tasks = [bot1.start(token1), bot2.start(token2)]
     if sys.stdin.isatty():
         tasks.append(cmd_input())
-
-    # On exécute tout en parallèle
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
