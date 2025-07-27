@@ -18,7 +18,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+# Instancie deux bots avec deux préfixes différents
+bot1 = commands.Bot(command_prefix="!a ", intents=intents)
+bot2 = commands.Bot(command_prefix="!b ", intents=intents)
 
 # ✅ Nom des cogs à charger
 COGS = [
@@ -54,21 +56,24 @@ COGS = [
     "cogs.db",
 ]
 
-@bot.event
-async def on_ready():
-    print(f"✅ Connecté en tant que {bot.user}")
-    await bot.tree.sync()
-    print("✅ Slash commands ON")
-    print("✅ Bot prêt. : [reload] [stop] tape ça dans le cmd pour fast restart ou stop le bot")
-
-async def load_extensions():
+async def load_extensions(bot: commands.Bot):
     for ext in COGS:
         try:
             await bot.load_extension(ext)
-            print(f"✅ Code chargée : {ext}")
+            print(f"✅ Chargé sur {bot.user or bot}: {ext}")
         except commands.errors.ExtensionAlreadyLoaded:
             await bot.reload_extension(ext)
-            print(f"♻️ Code rechargée : {ext}")
+            print(f"♻️ Rechargé sur {bot.user or bot}: {ext}")
+
+# Events pour bot1
+@bot1.event
+async def on_ready():
+    print(f"🔵 Bot1 connecté en tant que {bot1.user}")
+
+# Events pour bot2
+@bot2.event
+async def on_ready():
+    print(f"🟢 Bot2 connecté en tant que {bot2.user}")
 
 async def cmd_input():
     loop = asyncio.get_event_loop()
@@ -76,18 +81,17 @@ async def cmd_input():
         try:
             cmd = await loop.run_in_executor(None, input, "> ")
         except EOFError:
-            print("📭 Stdin fermé, arrêt de la boucle cmd_input.")
             break
-
         cmd = cmd.strip().lower()
         if cmd == "reload":
-            print("♻️ Relancement des cogs...")
-            await load_extensions()
-            await bot.tree.sync()
-            print("✅ Tous les cogs rechargés et slash fonctionne.")
+            print("♻️ Relancement des cogs sur les deux bots…")
+            await load_extensions(bot1)
+            await load_extensions(bot2)
+            print("✅ Tous les cogs rechargés.")
         elif cmd == "stop":
-            print("Fermeture du bot…")
-            await bot.close()
+            print("Fermeture des deux bots…")
+            await bot1.close()
+            await bot2.close()
             break
         else:
             print("Commande inconnue. Utilise : reload / stop")
@@ -98,18 +102,20 @@ async def main():
     if not token1 or not token2:
         raise RuntimeError("Il faut définir DISCORD_TOKEN et DISCORD_TOKEN2 dans le .env")
 
-    # Prépare les tâches à lancer
+    # On prépare les tâches : loader les extensions et démarrer chaque bot
     tasks = [
-        load_extensions(),
-        bot.start(token),
+        load_extensions(bot1),
+        load_extensions(bot2),
+        bot1.start(token1),
+        bot2.start(token2),
     ]
 
-    # Ne lance la boucle CLI que si stdin est un terminal interactif
+    # Si on est en terminal interactif, on ajoute la boucle de commande
     if sys.stdin.isatty():
         tasks.append(cmd_input())
 
-    async with bot:
-        await asyncio.gather(*tasks)
+    # On exécute tout en parallèle
+    await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     asyncio.run(main())
