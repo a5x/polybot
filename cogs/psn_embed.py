@@ -122,7 +122,7 @@ def get_custom_embed(name: str) -> discord.Embed:
         embed.add_field(name="Date de création", value="2017", inline=True)
     elif name == "SS_":
         embed.add_field(name="Status", value="Privé", inline=True)
-        embed.add_field(name="Account ID <:aid:1397760504457465879>", value="-", inline=True)
+        embed.add_field(name="Account ID <:aid:1397760504457465879>", value="2530784296730065801", inline=True)
         embed.add_field(name="Pays 🌍", value="États-Unis 🇺🇸", inline=True)
         embed.add_field(name="Langue", value="US", inline=True)
         embed.add_field(name="PlayStation Plus <:psplus:1397614330601799873>", value="Non Actif", inline=True)
@@ -130,7 +130,7 @@ def get_custom_embed(name: str) -> discord.Embed:
         embed.add_field(name="Niveau de Trophées <:leveltrph:1397758392033869924>", value="Privé", inline=True)
         embed.add_field(name="Total de Trophées <:trph:1397758357464416369>", value="Privé", inline=True)
         embed.add_field(name="Nombre de jeux", value="Privé", inline=True)
-        embed.add_field(name="Amis <:amis:1397758314036596897>", value="Privé", inline=True)
+        embed.add_field(name="Amis <:amis:1397758314036596897>", value="3", inline=True)
         embed.add_field(name="Date de création", value="2006 <:2k6:1397618209061994606>", inline=True)
         embed.add_field(name="A propros", value="Gucci Demon.", inline=True)
         embed.set_thumbnail(url="https://psn-rsc.prod.dl.playstation.net/psn-rsc/avatar/UT0016/CUSA06833_00-AV00000000000001_72E7CFC37BB24D706E60_xl.png")
