@@ -106,7 +106,7 @@ country_map = {
     "Kazakhstan":         "Kazakhstan 🇰🇿",
     "Kenya":              "Kenya 🇰🇪",
     "Kiribati":           "Kiribati 🇰🇮",
-    "Korea":       "Corée du Sud 🇰🇷",
+    "South Korea":        "Corée du Sud 🇰🇷",
     "Kosovo":             "Kosovo 🇽🇰",
     "Kuwait":             "Koweït 🇰🇼",
     "Kyrgyzstan":         "Kirghizistan 🇰🇬",
