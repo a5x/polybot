@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord import app_commands
 import aiohttp
 from bs4 import BeautifulSoup
+import re
 
 class SocialClub(commands.Cog):
     def __init__(self, bot):
@@ -18,38 +19,53 @@ class SocialClub(commands.Cog):
             "User-Agent": "Mozilla/5.0 (DiscordBot)"
         }
 
+        # 1) Récupération du HTML
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url) as resp:
                 if resp.status == 404:
                     return await interaction.followup.send(f"❌ Profil **{pseudo}** introuvable.")
                 html = await resp.text()
 
-        # Parse HTML
+        # 2) Parsing et extraction du SCID
         soup = BeautifulSoup(html, "html.parser")
-
-        # Essai via meta tag
         scid = None
-        meta = soup.find("meta", {"name": "scid"})
-        if meta and meta.has_attr("content"):
-            scid = meta["content"]
 
-        # Sinon, recherche dans les <script>
+        # a) data-rid sur le header
+        header = soup.find("div", class_="profile-header")
+        if header and header.get("data-rid"):
+            scid = header["data-rid"]
+
+        # b) data-profile-id sur n'importe quel élément
+        if not scid:
+            elem = soup.find(attrs={"data-profile-id": True})
+            if elem:
+                scid = elem["data-profile-id"]
+
+        # c) balise meta[name="scid"]
+        if not scid:
+            meta = soup.find("meta", {"name": "scid"})
+            if meta and meta.get("content"):
+                scid = meta["content"]
+
+        # d) regex dans les <script>
         if not scid:
             for script in soup.find_all("script"):
-                text = script.string
-                if text and "scid" in text:
-                    import re
-                    m = re.search(r"""['"]scid['"]\s*[:=]\s*['"]?(\d+)['"]?""", text)
-                    if m:
-                        scid = m.group(1)
-                        break
+                text = script.string or ""
+                m = re.search(r'"rid"\s*:\s*"(\d+)"', text)
+                if m:
+                    scid = m.group(1)
+                    break
+                m = re.search(r'"profileId"\s*:\s*(\d+)', text)
+                if m:
+                    scid = m.group(1)
+                    break
 
+        # 3) Vérification et embed
         if not scid:
             return await interaction.followup.send(
-                f"❌ Impossible de trouver le SCID pour **{pseudo}**. Vérifiez que le profil est public."
+                f"❌ Impossible de trouver le SCID pour **{pseudo}**. Vérifiez que le profil est public ou que le pseudo est correct."
             )
 
-        # Construction de l’embed
         embed = discord.Embed(
             title=pseudo,
             url=url,
