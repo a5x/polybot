@@ -18,14 +18,14 @@ class Roblox(commands.Cog):
             payload = {"usernames": [username], "excludeBannedUsers": False}
             async with session.post(url_id, json=payload) as resp:
                 data = await resp.json()
-                if not data["data"]:
+                if not data.get("data"):
                     return await interaction.followup.send("❌ Utilisateur introuvable.")
                 user_id = data["data"][0]["id"]
 
-            # 2) Profil général (+ isBanned et description)
+            # 2) Profil général (+ isBanned, description, date de création)
             async with session.get(f"https://users.roblox.com/v1/users/{user_id}") as resp:
                 profile = await resp.json()
-                is_banned = profile.get("isBanned", False)  # :contentReference[oaicite:2]{index=2}
+                is_banned = profile.get("isBanned", False)
                 about_me = profile.get("description", "")
 
             # 3) Présence (online/offline)
@@ -36,7 +36,7 @@ class Roblox(commands.Cog):
                 pres = await resp.json()
                 pres_data = pres.get("userPresences", [{}])[0]
                 ptype = pres_data.get("userPresenceType", 0)
-                status = "Online" if ptype == 1 else "Offline"  # :contentReference[oaicite:3]{index=3}
+                status = "Online" if ptype == 1 else "Offline"
 
             # 4) Stats sociales
             async with session.get(f"https://friends.roblox.com/v1/users/{user_id}/friends/count") as resp:
@@ -53,32 +53,33 @@ class Roblox(commands.Cog):
             )
             async with session.get(thumb_url) as resp:
                 thumb = await resp.json()
-                avatar_url = thumb["data"][0]["imageUrl"] if thumb["data"] else None
+                avatar_url = thumb.get("data", [{}])[0].get("imageUrl")
 
-            # 6) Vérification du badge “Verified”
-            profile_page = f"https://www.roblox.com/users/{user_id}/profile"
-            async with session.get(profile_page) as resp:
-                html = await resp.text()
-                is_verified = 'data-is-verified="true"' in html
+            # 6) Vérification du badge “Verified” via l'inventaire
+            badge_asset_id = 102611803
+            async with session.get(
+                f"https://inventory.roblox.com/v1/users/{user_id}/items/Asset/{badge_asset_id}"
+            ) as resp:
+                is_verified = (resp.status == 200)
 
-            # 7) (Optionnel) RAP & valeur via Rolimon’s (nécessite proxy/API clé)
+            # 7) RAP & valeur estimée via Rolimon’s
             try:
                 rol_api = f"https://api.rolimons.com/playerapi/user?user={user_id}"
                 async with session.get(rol_api) as resp:
                     rol = await resp.json()
-                    rap   = rol.get("rap", "N/A")
+                    rap = rol.get("rap", "N/A")
                     value = rol.get("value", "N/A")
             except:
                 rap, value = "N/A", "N/A"
 
-        # Formatage des dates
+        # Formatage de la date de création
         created = datetime.datetime.fromisoformat(profile["created"].replace("Z", "+00:00"))
         created_str = created.strftime("%d %B %Y")
 
         # Construction de l’embed
         embed = discord.Embed(
-            title=f"{profile['name']}",
-            url=profile_page,
+            title=profile.get("name", username),
+            url=f"https://www.roblox.com/users/{user_id}/profile",
             color=discord.Color.dark_gray()
         )
         if avatar_url:
@@ -89,18 +90,14 @@ class Roblox(commands.Cog):
             value=f"👥 Amis : {friends} | Followers : {followers} | Following : {followings}",
             inline=False
         )
-        embed.add_field(name="ID", value=user_id, inline=True)
-        embed.add_field(
-            name="Vérifié",
-            value="✅" if is_verified else "❌",
-            inline=True
-        )
-        embed.add_field(name="Statut", value=status, inline=True)
-        embed.add_field(name="Banni ?", value="❌ Oui" if is_banned else "✅ Non", inline=True)
-        embed.add_field(name="Date de création", value=created_str, inline=True)
-        embed.add_field(name="About Me", value=about_me or "—", inline=False)
-        embed.add_field(name="RAP", value=str(rap), inline=True)
-        embed.add_field(name="Valeur estimée", value=str(value), inline=True)
+        embed.add_field(name="ID",             value=str(user_id),                inline=True)
+        embed.add_field(name="Compte vérifié ?", value="✅ Oui" if is_verified else "❌ Non", inline=True)
+        embed.add_field(name="Statut",         value=status,                      inline=True)
+        embed.add_field(name="Banni ?",        value="❌ Oui" if is_banned else "✅ Non", inline=True)
+        embed.add_field(name="Date création",  value=created_str,                 inline=True)
+        embed.add_field(name="About Me",       value=about_me or "—",             inline=False)
+        embed.add_field(name="RAP",            value=str(rap),                    inline=True)
+        embed.add_field(name="Valeur estimée", value=str(value),                  inline=True)
 
         await interaction.followup.send(embed=embed)
 
