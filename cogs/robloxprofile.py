@@ -22,7 +22,7 @@ class Roblox(commands.Cog):
                     return await interaction.followup.send("❌ Utilisateur introuvable.")
                 user_id = data["data"][0]["id"]
 
-            # 2) Profil général (+ isBanned, description, date de création)
+            # 2) Profil général (+ isBanned, description)
             async with session.get(f"https://users.roblox.com/v1/users/{user_id}") as resp:
                 profile = await resp.json()
                 is_banned = profile.get("isBanned", False)
@@ -63,14 +63,14 @@ class Roblox(commands.Cog):
                 is_verified = (resp.status == 200)
 
             # 7) RAP & valeur estimée via Rolimon’s
-            try:
-                rol_api = f"https://api.rolimons.com/playerapi/user?user={user_id}"
-                async with session.get(rol_api) as resp:
+            # Utilisation de l’endpoint officiel : https://www.rolimons.com/playerapi/player/{USER_ID} :contentReference[oaicite:0]{index=0}
+            async with session.get(f"https://www.rolimons.com/playerapi/player/{user_id}") as resp:
+                if resp.status == 200:
                     rol = await resp.json()
-                    rap = rol.get("rap", "N/A")
+                    rap   = rol.get("rap", "N/A")
                     value = rol.get("value", "N/A")
-            except:
-                rap, value = "N/A", "N/A"
+                else:
+                    rap, value = "N/A", "N/A"
 
         # Formatage de la date de création
         created = datetime.datetime.fromisoformat(profile["created"].replace("Z", "+00:00"))
@@ -90,14 +90,14 @@ class Roblox(commands.Cog):
             value=f"👥 Amis : {friends} | Followers : {followers} | Following : {followings}",
             inline=False
         )
-        embed.add_field(name="ID",             value=str(user_id),                inline=True)
-        embed.add_field(name="Compte vérifié ?", value="✅ Oui" if is_verified else "❌ Non", inline=True)
-        embed.add_field(name="Statut",         value=status,                      inline=True)
-        embed.add_field(name="Banni ?",        value="❌ Oui" if is_banned else "✅ Non", inline=True)
-        embed.add_field(name="Date création",  value=created_str,                 inline=True)
-        embed.add_field(name="About Me",       value=about_me or "—",             inline=False)
-        embed.add_field(name="RAP",            value=str(rap),                    inline=True)
-        embed.add_field(name="Valeur estimée", value=str(value),                  inline=True)
+        embed.add_field(name="ID",               value=str(user_id),                        inline=True)
+        embed.add_field(name="vérifié", value="Oui" if is_verified else "Non", inline=True)
+        embed.add_field(name="Statut",           value=status,                              inline=True)
+        embed.add_field(name="Ban",          value="Oui" if is_banned else "Non",   inline=True)
+        embed.add_field(name="Date création",    value=created_str,                         inline=True)
+        embed.add_field(name="About Me",         value=about_me or "—",                     inline=False)
+        embed.add_field(name="RAP",              value=str(rap),                            inline=True)
+        embed.add_field(name="Valeur estimée",   value=str(value),                          inline=True)
 
         await interaction.followup.send(embed=embed)
 
