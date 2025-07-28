@@ -62,15 +62,6 @@ class Roblox(commands.Cog):
             ) as resp:
                 is_verified = (resp.status == 200)
 
-            # 7) RAP & valeur estimée via Rolimon’s
-            # Utilisation de l’endpoint officiel : https://www.rolimons.com/playerapi/player/{USER_ID} :contentReference[oaicite:0]{index=0}
-            async with session.get(f"https://www.rolimons.com/playerapi/player/{user_id}") as resp:
-                if resp.status == 200:
-                    rol = await resp.json()
-                    rap   = rol.get("rap", "N/A")
-                    value = rol.get("value", "N/A")
-                else:
-                    rap, value = "N/A", "N/A"
 
         # Formatage de la date de création
         created = datetime.datetime.fromisoformat(profile["created"].replace("Z", "+00:00"))
@@ -96,8 +87,6 @@ class Roblox(commands.Cog):
         embed.add_field(name="Ban",          value="Oui" if is_banned else "Non",   inline=True)
         embed.add_field(name="Date création",    value=created_str,                         inline=True)
         embed.add_field(name="About Me",         value=about_me or "—",                     inline=False)
-        embed.add_field(name="RAP",              value=str(rap),                            inline=True)
-        embed.add_field(name="Valeur estimée",   value=str(value),                          inline=True)
 
         await interaction.followup.send(embed=embed)
 
