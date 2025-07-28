@@ -51,7 +51,6 @@ COGS = [
     "cogs.psn",
     "cogs.psn_embed",
     "cogs.db",
-    "cogs.scid",
 ]
 
 async def load_extensions(bot: commands.Bot):
