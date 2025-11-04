@@ -9,7 +9,7 @@ import datetime  # Pour le calcul des durées et dates
 import base64
 
 # ——————— CONFIGURATION PSN ———————
-NPSO_TOKEN = os.getenv("PSN_NPSSO", "jHmgyNwYsdmX7Hyqqy9HN4QTxwGVUI3kM4O7ksLKH0lm9dr7Cz6VCKxeVl81phSH")
+NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6a2PoJ5lGhpSzrAHgw7bDc")
 psnawp    = PSNAWP(NPSO_TOKEN)
 
 # ——————— NOMS SPÉCIAUX POUR EMBED CUSTOM ———————
@@ -425,3 +425,4 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
+
