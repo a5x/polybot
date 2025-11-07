@@ -9,6 +9,7 @@ def get_custom_embed(name: str) -> discord.Embed:
     # Cartes de style
     color_map = {
         "V": 0x0094FF,
+        "ZR": 0x0094FF,
         "OL": 0x0094FF,
         "ms": 0x0094FF,
         "qcp": 0x0094FF,
@@ -20,6 +21,7 @@ def get_custom_embed(name: str) -> discord.Embed:
     title_map = {
         "V": "Profile PSN",
         "OL": "Profile PSN",
+        "ZR": "Profile PSN",
         "ms": "Profile PSN",
         "qcp": "Profile PSN",
         "bet": "Profile PSN",
@@ -30,6 +32,7 @@ def get_custom_embed(name: str) -> discord.Embed:
     desc_map = {
         "V": "PSN :\n V",
         "OL": "PSN :\n OL",
+        "ZR": "PSN :\n ZR",
         "ms": "PSN :\n ms",
         "qcp": "PSN :\n qcp",
         "bet": "PSN :\n bet",
@@ -64,6 +67,18 @@ def get_custom_embed(name: str) -> discord.Embed:
         embed.add_field(name="Account ID <:aid:1397760504457465879>", value="-", inline=True)
         embed.add_field(name="Pays 🌍", value="Corée du sud", inline=True)
         embed.add_field(name="Langue", value="KR", inline=True)
+        embed.add_field(name="PlayStation Plus <:psplus:1397614330601799873>", value="Non Actif", inline=True)
+        embed.add_field(name="Trophées <:alltrph:1397759469542314095>", value="Privé", inline=True)
+        embed.add_field(name="Niveau de Trophées <:leveltrph:1397758392033869924>", value="Privé", inline=True)
+        embed.add_field(name="Total de Trophées <:trph:1397758357464416369>", value="Privé", inline=True)
+        embed.add_field(name="Nombre de jeux", value="Privé", inline=True)
+        embed.add_field(name="Amis <:amis:1397758314036596897>", value="Privé", inline=True)
+        embed.add_field(name="Date de création", value="2017", inline=True)
+    elif name == "ZR":
+        embed.add_field(name="Status", value="Privé", inline=True)
+        embed.add_field(name="Account ID <:aid:1397760504457465879>", value="-", inline=True)
+        embed.add_field(name="Pays 🌍", value="France", inline=True)
+        embed.add_field(name="Langue", value="FR", inline=True)
         embed.add_field(name="PlayStation Plus <:psplus:1397614330601799873>", value="Non Actif", inline=True)
         embed.add_field(name="Trophées <:alltrph:1397759469542314095>", value="Privé", inline=True)
         embed.add_field(name="Niveau de Trophées <:leveltrph:1397758392033869924>", value="Privé", inline=True)
