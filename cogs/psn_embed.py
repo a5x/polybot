@@ -79,6 +79,7 @@ def get_custom_embed(name: str) -> discord.Embed:
         embed.add_field(name="Account ID <:aid:1397760504457465879>", value="-", inline=True)
         embed.add_field(name="Pays 🌍", value="France", inline=True)
         embed.add_field(name="Langue", value="FR", inline=True)
+        embed.add_field(name="About me", value="@uxhk aka zerty", inline=True)
         embed.add_field(name="PlayStation Plus <:psplus:1397614330601799873>", value="Non Actif", inline=True)
         embed.add_field(name="Trophées <:alltrph:1397759469542314095>", value="Privé", inline=True)
         embed.add_field(name="Niveau de Trophées <:leveltrph:1397758392033869924>", value="Privé", inline=True)
@@ -157,3 +158,4 @@ def get_custom_embed(name: str) -> discord.Embed:
 async def setup(bot):
     # Permet de charger ce module sans cog spécifique
     pass
+
