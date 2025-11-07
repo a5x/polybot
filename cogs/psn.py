@@ -13,7 +13,7 @@ NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6
 psnawp    = PSNAWP(NPSO_TOKEN)
 
 # ——————— NOMS SPÉCIAUX POUR EMBED CUSTOM ———————
-SPECIAL_NAMES = {"V", "SS_", "OL", "ms", "qcp", "bet", "L17"}
+SPECIAL_NAMES = {"V", "SS_", "OL", "ms", "qcp", "bet", "L17", "ZR"}
 
 # ——————— MAPPING DES PAYS ———————
 country_map = {
@@ -425,4 +425,5 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
+
 
