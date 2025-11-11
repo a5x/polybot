@@ -97,15 +97,15 @@ class Crew(commands.Cog):
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto,
-                url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
+                url=f"https://socialclub.rockstargames.com/crew/{crew_name_display}",
                 color=color_value
             )
 
             embed.add_field(name="👥 Membres", value=f"{member_count_int:,}", inline=True)
             embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
             embed.add_field(name="⭐ Crew Dev", value="✅ Oui" if is_dev else "❌ Non", inline=True)
-            embed.add_field(name="👑 Fondateur", value="✅ Oui" if is_founder else "❌ Non", inline=True)
-            embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
+            #embed.add_field(name="👑 Fondateur", value="✅ Oui" if is_founder else "❌ Non", inline=True)
+            #embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
             embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
             embed.add_field(name="🆔 Crew ID", value=crew_id, inline=True)
 
