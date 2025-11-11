@@ -49,6 +49,7 @@ COGS = [
     "cogs.leak",
     "cogs.db",
     "cogs.kickprofile",
+    "cogs.crew",
 ]
 
 async def load_extensions(bot: commands.Bot):
