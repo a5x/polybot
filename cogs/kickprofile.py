@@ -3,9 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import aiohttp
-from bs4 import BeautifulSoup
 import json
-import re
 
 
 class KickProfile(commands.Cog):
@@ -28,44 +26,18 @@ class KickProfile(commands.Cog):
 					await interaction.followup.send("❌ Utilisateur introuvable ou inaccessible.")
 					return
 
-				html = await resp.text()
-
-		soup = BeautifulSoup(html, "html.parser")
-
-		data = None
-		for script in soup.find_all('script'):
-			txt = script.string
-			if not txt:
-				continue
-			txt = txt.strip()
-			if script.get('id') == '__NEXT_DATA__':
 				try:
-					data = json.loads(txt)
-					break
+					data = await resp.json()
 				except Exception:
-					pass
+					# fallback: try to parse text as JSON
+					text = await resp.text()
+					try:
+						data = json.loads(text)
+					except Exception:
+						await interaction.followup.send("❌ Impossible de parser la réponse de l'API Kick.")
+						return
 
-			if txt.startswith('{') or txt.startswith('['):
-				try:
-					data = json.loads(txt)
-					break
-				except Exception:
-					pass
-			m = re.search(r'window\.__INITIAL_STATE__\s*=\s*({.*?});', txt, re.S)
-			if m:
-				try:
-					data = json.loads(m.group(1))
-					break
-				except Exception:
-					pass
-
-			m2 = re.search(r'window\.__PRELOADED_STATE__\s*=\s*({.*?});', txt, re.S)
-			if m2:
-				try:
-					data = json.loads(m2.group(1))
-					break
-				except Exception:
-					pass
+		# Helper: recursively search for keys (case-insensitive)
 		def recursive_search(obj, key_names):
 			if obj is None:
 				return None
@@ -116,24 +88,7 @@ class KickProfile(commands.Cog):
 						followers = followers[possible]
 						break
 
-		# Fallback parsing from meta tags / visible page if JSON scrape failed
-		if not display_name:
-			h1 = soup.find('h1')
-			if h1:
-				display_name = h1.text.strip()
-
-		if not avatar_url:
-			meta_img = soup.find('meta', property='og:image')
-			if meta_img:
-				avatar_url = meta_img.get('content')
-
-		if not followers:
-			og_desc = soup.find('meta', property='og:description')
-			if og_desc and og_desc.get('content'):
-				text = og_desc.get('content')
-				m = re.search(r'([\d,\.]+)\s+followers', text, re.I)
-				if m:
-					followers = m.group(1)
+		# No HTML fallback: we rely on the API JSON response
 
 		# Ensure we have some sensible defaults
 		username_v = username_v or username
@@ -180,15 +135,13 @@ class KickProfile(commands.Cog):
 					return "Non"
 			return str(v)
 
-		# Build embed with extra fields
+		# Build embed with extra fields (description prefers bio from user_fields if available)
 		desc_lines = []
-		# prefer bio from parsed meta or user fields if available
 		bio_text = None
-		bio_tag = soup.find('meta', attrs={'name': 'description'})
-		if bio_tag and bio_tag.get('content'):
-			bio_text = bio_tag.get('content').split('(@')[0].strip()
-		if 'bio' in locals() and bio:  # from user_obj
+		if 'bio' in locals() and bio:
 			bio_text = bio
+		elif user_fields.get('bio'):
+			bio_text = user_fields.get('bio')
 		if bio_text:
 			desc_lines.append(bio_text)
 
@@ -198,7 +151,7 @@ class KickProfile(commands.Cog):
 
 		embed = discord.Embed(
 			title=f"@{username_v}",
-			url=url,
+			url=f"https://kick.com/{username}",
 			description="\n".join(desc_lines) if desc_lines else None,
 			color=discord.Color.orange()
 		)
@@ -236,5 +189,4 @@ class KickProfile(commands.Cog):
 
 async def setup(bot):
 	await bot.add_cog(KickProfile(bot))
-
 
