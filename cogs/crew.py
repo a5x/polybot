@@ -16,7 +16,6 @@ class Crew(commands.Cog):
         }
 
     def _first_present(self, data: dict, *keys, default=None):
-        """Retourne la première valeur non-None trouvée dans data pour la liste de keys donnée."""
         for k in keys:
             if k in data and data[k] is not None:
                 return data[k]
@@ -61,7 +60,7 @@ class Crew(commands.Cog):
                 await interaction.followup.send(f"❌ Aucun crew trouvé avec le nom '{crew_name}'")
                 return
 
-            # Champs du crew
+            # Récupération des champs
             crew_name_display = self._first_present(crew, "CrewName", "name", "crewName", default="N/A")
             crew_tag = self._first_present(crew, "CrewTag", "tag", "crewTag", default="N/A")
             crew_motto = self._first_present(crew, "CrewMotto", "motto", default="Aucune devise")
@@ -71,7 +70,6 @@ class Crew(commands.Cog):
             is_founder = self._first_present(crew, "IsFounderCrew", "isFounderCrew", default=False)
             crew_color_hex = self._first_present(crew, "CrewColour", "CrewColor", "color", default="#FFFFFF")
             crew_id = self._first_present(crew, "CrewId", "crewId", "crewID", default="N/A")
-            shard_id = self._first_present(crew, "ShardId", "ShardingId", "shard", default="0")  # pour l’emblème
 
             # Date de création
             created_at_raw = self._first_present(crew, "Created", "CreatedAt", "DateCreated", default=None)
@@ -95,18 +93,13 @@ class Crew(commands.Cog):
             except Exception:
                 color_value = discord.Color.blue().value
 
-            # Générer le lien de l’emblème
-            emblem_url = f"https://prod.cloud.rockstargames.com/crews/sc/6666/{crew_id}/publish/emblem/emblem_128.png"
-
-            # Construction embed
+            # Construire embed
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto,
-                url=f"https://socialclub.rockstargames.com/crew/{crew_name_display}",
+                url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
                 color=color_value
             )
-
-            embed.set_thumbnail(url=emblem_url)
 
             embed.add_field(name="👥 Membres", value=f"{member_count_int:,}", inline=True)
             embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
@@ -115,6 +108,9 @@ class Crew(commands.Cog):
             embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
             embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
             embed.add_field(name="🆔 Crew ID", value=crew_id, inline=True)
+
+            # Thumbnail du logo
+            embed.set_thumbnail(url=f"https://prod.cloud.rockstargames.com/crews/sc/6667/{crew_id}/publish/emblem/emblem_128.png")
 
             embed.set_footer(text="Powered by Rockstar Social Club API")
 
