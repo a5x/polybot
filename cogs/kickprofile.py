@@ -161,15 +161,15 @@ class KickProfile(commands.Cog):
 			location = ", ".join(filter(None, [user_fields.get('city'), user_fields.get('state'), user_fields.get('country')]))
 			embed.add_field(name="Localisation", value=location or "N/A", inline=True)
 
-		if user_fields.get('created_at'):
-			created_date = user_fields.get('created_at')
-			if created_date and 'T' in str(created_date):
+		if user_fields.get('email_verified_at'):
+			email_verified_date = user_fields.get('email_verified_at')
+			if email_verified_date and 'T' in str(email_verified_date):
 				try:
-					dt = datetime.fromisoformat(str(created_date).replace('Z', '+00:00'))
-					created_date = dt.strftime("%d/%m/%Y à %H:%M")
+					dt = datetime.fromisoformat(str(email_verified_date).replace('Z', '+00:00'))
+					email_verified_date = dt.strftime("%d/%m/%Y à %H:%M")
 				except Exception:
 					pass
-			embed.add_field(name="Créé le", value=str(created_date), inline=True)
+			embed.add_field(name="Compte crée le ", value=str(email_verified_date), inline=True)
 
 		if user_fields.get('email_verified_at'):
 			email_verified_date = user_fields.get('email_verified_at')
