@@ -46,8 +46,9 @@ class LeakCog(commands.Cog):
             return await interaction.followup.send("Erreur de lecture du fichier JSON sur GitHub.")
 
         # ➕ Ajouter le pseudo s'il n'existe pas déjà
-        if pseudo not in content:
-            content.append(pseudo)
+            pseudo_lower = pseudo.lower()
+            if pseudo_lower not in content:
+                content.append(pseudo_lower)
         
         # Trier la liste
         content.sort()

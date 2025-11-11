@@ -384,10 +384,17 @@ class Psn(commands.Cog):
         except Exception:
             self.notes = {}
         # leak: list of PSN accounts marked as leaked [psn1, psn2, ...]
+        # Ensure attribute exists even if loading fails
+        self.leak = []
         try:
-            self.leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
+            raw_leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
+            # normalize to lowercase for case-insensitive matching
+            self.leak = [str(psn).lower() for psn in raw_leak]
         except Exception:
+            # keep self.leak as [] on error
             self.leak = []
+
+        # cooldown tracking per invoking user for /psn command
         self._last_psn = {}
 
     def save_notes(self):
