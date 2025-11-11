@@ -54,14 +54,14 @@ class Crew(commands.Cog):
             crew = data
 
             # Extraire les informations
-            crew_name_display = crew.get("name", "N/A")
-            crew_tag = crew.get("tag", "N/A")
-            crew_motto = crew.get("motto", "N/A")
-            member_count = crew.get("memberCount", 0)
-            is_private = crew.get("isPrivate", False)
-            is_dev = crew.get("isSystemCrew", False)
-            crew_color_hex = crew.get("color", "#FFFFFF")
-            crew_id = crew.get("crewId", "N/A")
+            crew_name_display = crew.get("CrewName", "N/A")
+            crew_tag = crew.get("CrewTag", "N/A")
+            crew_motto = crew.get("CrewMotto", "N/A")
+            member_count = crew.get("MemberCount", 0)
+            is_private = crew.get("IsPrivate", False)
+            is_dev = crew.get("Dev", False)
+            crew_color_hex = crew.get("CrewColour", "#FFFFFF")
+            crew_id = crew.get("CrewId", "N/A")
 
             # Créer l'embed
             embed = discord.Embed(
