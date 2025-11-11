@@ -384,12 +384,10 @@ class Psn(commands.Cog):
         except Exception:
             self.notes = {}
         # leak: list of PSN accounts marked as leaked [psn1, psn2, ...]
-            try:
-                raw_leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
-                self.leak = [psn.lower() for psn in raw_leak]
-            except Exception:
-                self.leak = []
-        # cooldown tracking per invoking user for /psn command
+        try:
+            self.leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
+        except Exception:
+            self.leak = []
         self._last_psn = {}
 
     def save_notes(self):
@@ -611,7 +609,7 @@ class Psn(commands.Cog):
                 embed.add_field(name="Date de création", value=self.psn_db[key], inline=False)
 
             # Leak status
-            if current_id.lower() in self.leak:
+            if current_id.lower() in [leak.lower() for leak in self.leak]:
                 embed.add_field(name="Leak", value="Oui", inline=False)
 
             embed.add_field(name="À propos", value=about_me, inline=False)
