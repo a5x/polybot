@@ -14,6 +14,16 @@ class Crew(commands.Cog):
             "X-Requested-With": "XMLHttpRequest",
         }
 
+    def _first_present(self, data: dict, *keys, default=None):
+        """
+        Retourne la première valeur non-None trouvée dans data pour la liste de keys donnée.
+        Keys peuvent être 'CrewName', 'name', etc.
+        """
+        for k in keys:
+            if k in data and data[k] is not None:
+                return data[k]
+        return default
+
     @app_commands.command(name="crew", description="Afficher les infos d'un crew GTA Online")
     @app_commands.describe(
         bearer_token="Votre Bearer Token Rockstar",
@@ -38,33 +48,58 @@ class Crew(commands.Cog):
 
                     data = await resp.json()
 
-            # Vérifier si des crews ont été trouvés
-            crews = data.get("Crews")
-            if not crews:
+            # Cas 1: réponse avec liste "Crews": prendre le premier élément si présent
+            crew = None
+            if isinstance(data, dict) and "Crews" in data and isinstance(data["Crews"], (list, tuple)) and data["Crews"]:
+                crew = data["Crews"][0]
+            elif isinstance(data, dict) and any(k in data for k in ("CrewId", "crewId", "CrewName", "name", "CrewTag", "tag")):
+                # Cas 2: la réponse contient directement les champs du crew (pas de "Crews")
+                crew = data
+            else:
+                # Sinon essayer d'extraire d'autres formes (par sécurité)
+                # Parfois l'API peut retourner un dict avec une sous-clé (ex: "result" ou "data")
+                for subkey in ("result", "data", "crew", "Crew", "Response"):
+                    if isinstance(data, dict) and subkey in data and isinstance(data[subkey], dict):
+                        crew = data[subkey]
+                        break
+
+            if not crew:
                 await interaction.followup.send(f"❌ Aucun crew trouvé avec le nom '{crew_name}'")
                 return
 
-            crew = crews[0]  # Premier résultat
+            # Récupération robuste des champs (plusieurs noms de clés testés)
+            crew_name_display = self._first_present(crew, "CrewName", "name", "crewName", default="N/A")
+            crew_tag = self._first_present(crew, "CrewTag", "tag", "crewTag", default="N/A")
+            crew_motto = self._first_present(crew, "CrewMotto", "motto", "CrewMotto", default="Aucune devise")
+            member_count = self._first_present(crew, "MemberCount", "memberCount", "Membercount", default=0)
+            is_private = self._first_present(crew, "IsPrivate", "isPrivate", default=False)
+            # Dev flag peut être "Dev", "isSystemCrew" ou "Dev"
+            is_dev = self._first_present(crew, "Dev", "isSystemCrew", "DevFlag", default=False)
+            crew_color_hex = self._first_present(crew, "CrewColour", "CrewColor", "color", "CrewColour", default="#FFFFFF")
+            crew_id = self._first_present(crew, "CrewId", "crewId", "crewID", default="N/A")
 
-            # Extraire les informations
-            crew_name_display = crew.get("name", "N/A")
-            crew_tag = crew.get("tag", "N/A")
-            crew_motto = crew.get("motto", "Aucune devise")
-            member_count = crew.get("memberCount", 0)
-            is_private = crew.get("isPrivate", False)
-            is_dev = crew.get("isSystemCrew", False)
-            crew_color_hex = crew.get("color", "#FFFFFF")
-            crew_id = crew.get("crewId", "N/A")
+            # Normaliser le member_count s'il est en string
+            try:
+                member_count_int = int(str(member_count).replace(",", ""))
+            except Exception:
+                member_count_int = 0
 
-            # Créer l'embed Discord
+            # Construire l'embed
+            # convert hex to int safely
+            color_value = None
+            try:
+                color_value = int(str(crew_color_hex).replace("#", ""), 16)
+            except Exception:
+                color_value = discord.Color.blue().value
+
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto if crew_motto else "Aucune devise",
                 url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
-                color=int(crew_color_hex.replace("#", ""), 16) if crew_color_hex else discord.Color.blue().value
+                color=color_value
             )
 
-            embed.add_field(name="👥 Membres", value=f"{member_count:,}", inline=True)
+            embed.add_field(name="👥 Membres", value=f"{member_count_int:,}", inline=True)
             embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
             embed.add_field(name="⭐ Crew Dev", value="✅ Oui" if is_dev else "❌ Non", inline=True)
             embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
