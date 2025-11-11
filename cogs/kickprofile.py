@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord import app_commands
 import aiohttp
 import json
+from datetime import datetime
 
 
 class KickProfile(commands.Cog):
@@ -164,23 +165,21 @@ class KickProfile(commands.Cog):
 			created_date = user_fields.get('created_at')
 			if created_date and 'T' in str(created_date):
 				try:
-					from datetime import datetime
 					dt = datetime.fromisoformat(str(created_date).replace('Z', '+00:00'))
 					created_date = dt.strftime("%d/%m/%Y à %H:%M")
 				except Exception:
 					pass
-			embed.add_field(name="Créé le", value=created_date, inline=True)
+			embed.add_field(name="Créé le", value=str(created_date), inline=True)
 
 		if user_fields.get('email_verified_at'):
 			email_verified_date = user_fields.get('email_verified_at')
 			if email_verified_date and 'T' in str(email_verified_date):
 				try:
-					from datetime import datetime
 					dt = datetime.fromisoformat(str(email_verified_date).replace('Z', '+00:00'))
 					email_verified_date = dt.strftime("%d/%m/%Y à %H:%M")
 				except Exception:
 					pass
-			embed.add_field(name="Email vérifié le", value=email_verified_date, inline=True)
+			embed.add_field(name="Email vérifié le", value=str(email_verified_date), inline=True)
 
 		socials = []
 		for s in ('instagram', 'twitter', 'youtube', 'tiktok', 'discord', 'facebook'):
