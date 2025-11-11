@@ -8,10 +8,18 @@ import os
 import datetime  # Pour le calcul des durées et dates
 import base64
 import time
+import asyncio
+import requests
 
 # ——————— CONFIGURATION PSN ———————
 NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6a2PoJ5lGhpSzrAHgw7bDc")
 psnawp    = PSNAWP(NPSO_TOKEN)
+
+# ——————— CONFIGURATION GITHUB (pour synchronisation des notes) ———————
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = "a5x/polybot"
+GITHUB_NOTES_PATH = "data/note.json"
+GITHUB_BRANCH = "main"
 
 # ——————— NOMS SPÉCIAUX POUR EMBED CUSTOM ———————
 SPECIAL_NAMES = {"V", "SS_", "OL", "ms", "qcp", "bet", "L17", "ZR"}
@@ -233,7 +241,7 @@ def fetch_avatar_xl(user):
         avatars_modern = {e['size']: e['url'] for e in user.profile().get('avatars', [])}
         if 'xl' in avatars_modern:
             return avatars_modern['xl']
-    except PSNAWPException:
+    except Exception:
         pass
 
     try:
@@ -241,7 +249,7 @@ def fetch_avatar_xl(user):
         avatars_legacy = {e['size']: e['avatarUrl'] for e in legacy.get('profile', {}).get('avatarUrls', [])}
         if 'xl' in avatars_legacy:
             return avatars_legacy['xl']
-    except PSNAWPException:
+    except Exception:
         pass
 
     return 'http://static-resource.np.community.playstation.net/avatar_xl/default/Defaultavatar_xl.png'
@@ -294,14 +302,30 @@ class RatingView(discord.ui.View):
         """Enregistre la note de l'utilisateur et met à jour l'embed du message parent si possible."""
         psn_key = self.online_id.lower()
         user_id = str(interaction.user.id)
-
-        # Ensure data path
+        # Prevent double-voting: if the user already voted for this PSN, refuse
         try:
             self.cog.notes.setdefault(psn_key, {})
+        except Exception:
+            self.cog.notes = {psn_key: {}}
+
+        if user_id in self.cog.notes.get(psn_key, {}):
+            # Disable the ephemeral rating view message (remove buttons) and inform the user
+            try:
+                await interaction.response.edit_message(content=f"Vous avez déjà noté **{self.online_id}**. Vous ne pouvez pas re-noter.", view=None)
+            except Exception:
+                # fallback to send ephemeral
+                await interaction.response.send_message(f"Vous avez déjà noté **{self.online_id}**. Vous ne pouvez pas re-noter.", ephemeral=True)
+            return
+
+        # Save the vote
+        try:
             self.cog.notes[psn_key][user_id] = int(value)
             self.cog.save_notes()
         except Exception as e:
-            await interaction.response.send_message(f"Erreur lors de l'enregistrement de la note : {e}", ephemeral=True)
+            try:
+                await interaction.response.edit_message(content=f"Erreur lors de l'enregistrement de la note : {e}", view=None)
+            except Exception:
+                await interaction.response.send_message(f"Erreur lors de l'enregistrement de la note : {e}", ephemeral=True)
             return
 
         # Compute average
@@ -323,7 +347,21 @@ class RatingView(discord.ui.View):
         except Exception:
             pass
 
-        await interaction.response.send_message(f"Vous avez noté **{value}/5** pour **{self.online_id}**. Note moyenne : **{avg:.1f}/5**", ephemeral=True)
+        # Remove the ephemeral rating view (replace content, remove buttons)
+        try:
+            await interaction.response.edit_message(content=f"Merci — vous avez noté **{value}/5**. Note moyenne : **{avg:.1f}/5**", view=None)
+        except Exception:
+            # If we cannot edit (race condition), fallback to send ephemeral confirmation
+            await interaction.response.send_message(f"Merci — vous avez noté **{value}/5**. Note moyenne : **{avg:.1f}/5**", ephemeral=True)
+
+        # Send a short public confirmation that will be deleted after 5 seconds to avoid flooding
+        try:
+            sent = await interaction.followup.send(content=f"{interaction.user.mention} a noté **{self.online_id}** — **{value}/5** (moyenne {avg:.1f}/5)")
+            await asyncio.sleep(5)
+            await sent.delete()
+        except Exception:
+            # ignore followup errors
+            pass
 
 class Psn(commands.Cog):
     COUNTS_FILE = "data/psn_counts.json"
@@ -347,8 +385,73 @@ class Psn(commands.Cog):
         self._last_psn = {}
 
     def save_notes(self):
+        """Sauvegarde les notes localement ET les synchronise avec GitHub."""
+        # Sauvegarder localement d'abord
         os.makedirs(os.path.dirname(self.NOTES_FILE), exist_ok=True)
         json.dump(self.notes, open(self.NOTES_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        
+        # Synchroniser avec GitHub en arrière-plan
+        try:
+            self._sync_notes_to_github()
+        except Exception as e:
+            # log but don't crash
+            print(f"[PSN] Erreur lors de la synchronisation GitHub: {e}")
+
+    def _sync_notes_to_github(self):
+        """Synchronise les notes vers le GitHub repo (bloquant, à appeler dans un contexte async si souhaité)."""
+        if not GITHUB_TOKEN:
+            return  # Pas de token GitHub, skip
+        
+        try:
+            # 📥 Lire le fichier actuel depuis GitHub
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_NOTES_PATH}?ref={GITHUB_BRANCH}"
+            headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+            res = requests.get(url, headers=headers)
+            
+            if res.status_code == 200:
+                # Fichier existe déjà
+                data = res.json()
+                sha = data["sha"]
+                # Fusionner les données: garder les notes de GitHub et les notes locales
+                try:
+                    remote_notes = json.loads(base64.b64decode(data["content"]).decode())
+                except Exception:
+                    remote_notes = {}
+            elif res.status_code == 404:
+                # Fichier n'existe pas, créer un nouveau
+                sha = None
+                remote_notes = {}
+            else:
+                print(f"[PSN] Erreur GitHub GET {res.status_code}: {res.text}")
+                return
+            
+            # Fusionner: les notes locales écrasent les notes distantes
+            merged = remote_notes.copy()
+            for psn_key, votes in self.notes.items():
+                if psn_key not in merged:
+                    merged[psn_key] = {}
+                merged[psn_key].update(votes)
+            
+            # Encoder et envoyer
+            content_str = json.dumps(merged, indent=2, ensure_ascii=False)
+            encoded = base64.b64encode(content_str.encode()).decode()
+            
+            payload = {
+                "message": f"Mise à jour automatique des notes PSN via Discord bot",
+                "content": encoded,
+                "branch": GITHUB_BRANCH
+            }
+            if sha:
+                payload["sha"] = sha
+            
+            # 📤 Push sur GitHub
+            update = requests.put(url, headers=headers, json=payload)
+            if update.status_code not in (200, 201):
+                print(f"[PSN] Erreur GitHub PUT {update.status_code}: {update.text}")
+            else:
+                print(f"[PSN] Notes synchronisées avec GitHub avec succès")
+        except Exception as e:
+            print(f"[PSN] Exception lors de la sync GitHub: {e}")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -518,6 +621,5 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
-
 
 
