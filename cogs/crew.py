@@ -7,106 +7,108 @@ class Crew(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="crew", description="Afficher les infos d'un crew GTA Online")
-    @app_commands.describe(crew_name="Nom du crew à rechercher")
-    async def crew(self, interaction: discord.Interaction, crew_name: str):
-        await interaction.response.defer()
-
-        api_base_url = "https://socialclub.rockstargames.com/crewsapi/SearchCrews"
-        
-        # Headers pour l'API Rockstar
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    def _headers(self, bearer_token: str) -> dict:
+        """Génère les headers avec le Bearer Token"""
+        return {
+            "Authorization": f"Bearer {bearer_token}",
+            "X-Requested-With": "XMLHttpRequest",
         }
+
+    @app_commands.command(name="crew", description="Afficher les infos d'un crew GTA Online")
+    @app_commands.describe(
+        bearer_token="Votre Bearer Token Rockstar",
+        crew_name="Nom du crew à rechercher"
+    )
+    async def crew(self, interaction: discord.Interaction, bearer_token: str, crew_name: str):
+        # Réponse invisible aux autres utilisateurs
+        await interaction.response.defer(ephemeral=True)
+
+        api_base_url = "https://scapi.rockstargames.com/crew/byname"
         
         # Paramètres pour la recherche
-        params = {
-            "searchTerm": crew_name,
-            "crewType": "",
-            "openCrewFilter": -1,
-            "systemCrewFilter": -1
-        }
+        params = {"name": crew_name}
 
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(api_base_url, params=params) as resp:
-                if resp.status != 200:
-                    await interaction.followup.send(
-                        f"❌ Erreur lors de la connexion à l'API (code: {resp.status})"
-                    )
-                    return
+        try:
+            async with aiohttp.ClientSession(headers=self._headers(bearer_token)) as session:
+                async with session.get(api_base_url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 401:
+                        await interaction.followup.send(
+                            "❌ Bearer Token invalide ou expiré."
+                        )
+                        return
+                    elif resp.status != 200:
+                        await interaction.followup.send(
+                            f"❌ Erreur lors de la connexion à l'API (code: {resp.status})"
+                        )
+                        return
 
-                data = await resp.json()
+                    data = await resp.json()
 
-        # Vérifier si des crews ont été trouvés
-        if not data.get("Crews") or len(data["Crews"]) == 0:
-            await interaction.followup.send(
-                f"❌ Aucun crew trouvé avec le nom '{crew_name}'"
+            # Vérifier si le crew a été trouvé
+            if not data.get("status"):
+                await interaction.followup.send(
+                    f"❌ Aucun crew trouvé avec le nom '{crew_name}'"
+                )
+                return
+
+            crew = data
+
+            # Extraire les informations
+            crew_name_display = crew.get("name", "N/A")
+            crew_tag = crew.get("tag", "N/A")
+            crew_motto = crew.get("motto", "N/A")
+            member_count = crew.get("memberCount", 0)
+            is_private = crew.get("isPrivate", False)
+            is_dev = crew.get("isSystemCrew", False)
+            crew_color_hex = crew.get("color", "#FFFFFF")
+            crew_id = crew.get("crewId", "N/A")
+
+            # Créer l'embed
+            embed = discord.Embed(
+                title=f"[{crew_tag}] {crew_name_display}",
+                description=crew_motto if crew_motto else "Aucune devise",
+                url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
+                color=int(crew_color_hex.replace("#", ""), 16) if crew_color_hex else discord.Color.blue().value
             )
-            return
 
-        # Prendre le premier résultat
-        crew = data["Crews"][0]
+            # Ajouter les champs
+            embed.add_field(
+                name="👥 Nombre de membres",
+                value=f"{member_count:,}",
+                inline=True
+            )
 
-        # Extraire les informations
-        crew_name_display = crew.get("CrewName", "N/A")
-        crew_tag = crew.get("CrewTag", "N/A")
-        crew_motto = crew.get("CrewMotto", "N/A")
-        member_count = crew.get("MemberCount", 0)
-        is_private = crew.get("IsPrivate", False)
-        is_dev = crew.get("Dev", False)
-        crew_color_hex = crew.get("CrewColour", "#FFFFFF")
-        crew_url = crew.get("CrewUrl", "")
+            embed.add_field(
+                name="🔒 Privé",
+                value="✅ Oui" if is_private else "❌ Non",
+                inline=True
+            )
 
-        # Créer l'embed
-        embed = discord.Embed(
-            title=f"[{crew_tag}] {crew_name_display}",
-            description=crew_motto if crew_motto else "Aucune devise",
-            url=f"https://socialclub.rockstargames.com{crew_url}" if crew_url else None,
-            color=int(crew_color_hex.replace("#", ""), 16)
-        )
+            embed.add_field(
+                name="⭐ Crew Dev",
+                value="✅ Oui" if is_dev else "❌ Non",
+                inline=True
+            )
 
-        # Ajouter les champs
-        embed.add_field(
-            name="👥 Nombre de membres",
-            value=f"{member_count:,}",
-            inline=True
-        )
+            embed.add_field(
+                name="🏷️ Tag",
+                value=crew_tag,
+                inline=True
+            )
 
-        embed.add_field(
-            name="🔒 Privé",
-            value="✅ Oui" if is_private else "❌ Non",
-            inline=True
-        )
+            embed.add_field(
+                name="🆔 Crew ID",
+                value=crew_id,
+                inline=True
+            )
 
-        embed.add_field(
-            name="⭐ Crew Dev",
-            value="✅ Oui" if is_dev else "❌ Non",
-            inline=True
-        )
+            embed.set_footer(text="Powered by Rockstar Social Club API")
 
-        embed.add_field(
-            name="🏷️ Tag",
-            value=crew_tag,
-            inline=True
-        )
+            await interaction.followup.send(embed=embed)
 
-        # Ajouter d'autres infos utiles
-        crew_type = crew.get("CrewType", "N/A")
-        embed.add_field(
-            name="📂 Type",
-            value=crew_type if crew_type else "N/A",
-            inline=True
-        )
-
-        is_open = crew.get("IsOpen", False)
-        embed.add_field(
-            name="📖 Ouvert",
-            value="✅ Oui" if is_open else "❌ Non",
-            inline=True
-        )
-
-        embed.set_footer(text="Powered by Rockstar Social Club API")
-
-        await interaction.followup.send(embed=embed)
+        except aiohttp.ClientError as e:
+            await interaction.followup.send(
+                f"❌ Erreur de connexion: {str(e)}"
+            )
 async def setup(bot):
     await bot.add_cog(Crew(bot))
