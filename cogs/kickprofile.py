@@ -143,7 +143,7 @@ class KickProfile(commands.Cog):
 			title=f"@{username_v}",
 			url=f"https://kick.com/{username}",
 			description="\n".join(desc_lines) if desc_lines else None,
-			color=discord.Color.orange()
+			color=discord.Color.green()
 		)
 		if avatar_url:
 			embed.set_thumbnail(url=avatar_url)
@@ -176,4 +176,5 @@ class KickProfile(commands.Cog):
 
 async def setup(bot):
 	await bot.add_cog(KickProfile(bot))
+
 
