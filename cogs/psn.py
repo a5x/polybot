@@ -20,6 +20,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_REPO = "a5x/polybot"
 GITHUB_NOTES_PATH = "data/note.json"
 GITHUB_BRANCH = "main"
+GITHUB_LEAK_PATH = "data/leak.json"
 
 # ——————— NOMS SPÉCIAUX POUR EMBED CUSTOM ———————
 SPECIAL_NAMES = {"V", "SS_", "OL", "ms", "qcp", "bet", "L17", "ZR"}
@@ -367,6 +368,7 @@ class Psn(commands.Cog):
     COUNTS_FILE = "data/psn_counts.json"
     DB_FILE     = "data/psn_db.json"
     NOTES_FILE  = "data/note.json"
+    LEAK_FILE   = "data/leak.json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -381,6 +383,11 @@ class Psn(commands.Cog):
             self.notes = json.load(open(self.NOTES_FILE, "r", encoding="utf-8")) if os.path.exists(self.NOTES_FILE) else {}
         except Exception:
             self.notes = {}
+        # leak: list of PSN accounts marked as leaked [psn1, psn2, ...]
+        try:
+            self.leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
+        except Exception:
+            self.leak = []
         # cooldown tracking per invoking user for /psn command
         self._last_psn = {}
 
@@ -457,7 +464,7 @@ class Psn(commands.Cog):
     async def on_ready(self):
         await self.bot.change_presence(
             status=discord.Status.online,
-            activity=discord.Game("Polyvaland ! s/O 667")
+            activity=discord.Game("Big Z ! s/O 667")
         )
 
     def save_counts(self):
@@ -601,6 +608,10 @@ class Psn(commands.Cog):
             # Date de création custom
             if key in self.psn_db:
                 embed.add_field(name="Date de création", value=self.psn_db[key], inline=False)
+
+            # Leak status
+            if current_id.lower() in [leak.lower() for leak in self.leak]:
+                embed.add_field(name="Leak", value="Oui", inline=False)
 
             embed.add_field(name="À propos", value=about_me, inline=False)
             # Add average note to footer if exists
