@@ -14,6 +14,11 @@ class Crew(commands.Cog):
 
         api_base_url = "https://socialclub.rockstargames.com/crewsapi/SearchCrews"
         
+        # Headers pour l'API Rockstar
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
         # Paramètres pour la recherche
         params = {
             "searchTerm": crew_name,
@@ -22,7 +27,7 @@ class Crew(commands.Cog):
             "systemCrewFilter": -1
         }
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(api_base_url, params=params) as resp:
                 if resp.status != 200:
                     await interaction.followup.send(
