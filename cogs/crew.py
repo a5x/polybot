@@ -24,22 +24,32 @@ class Crew(commands.Cog):
     @app_commands.command(name="crew", description="Afficher les infos d'un crew GTA Online")
     @app_commands.describe(
         bearer_token="Votre Bearer Token Rockstar",
-        crew_name="Nom du crew à rechercher"
+        search_by="Rechercher par 'name' ou 'id'",
+        query="Nom ou ID du crew selon le type de recherche"
     )
-    async def crew(self, interaction: discord.Interaction, bearer_token: str, crew_name: str):
+    async def crew(self, interaction: discord.Interaction, bearer_token: str, search_by: str, query: str):
         await interaction.response.defer(ephemeral=True)
 
-        api_base_url = "https://scapi.rockstargames.com/crew/byname"
-        params = {"name": crew_name}
+        search_by = search_by.lower()
+        if search_by not in ("name", "id"):
+            await interaction.followup.send("❌ Paramètre `search_by` invalide, utilisez 'name' ou 'id'.")
+            return
+
+        if search_by == "name":
+            api_url = "https://scapi.rockstargames.com/crew/byname"
+            params = {"name": query}
+        else:  # search_by == "id"
+            api_url = f"https://scapi.rockstargames.com/crew/{query}"
+            params = None
 
         try:
             async with aiohttp.ClientSession(headers=self._headers(bearer_token)) as session:
-                async with session.get(api_base_url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status == 401:
                         await interaction.followup.send("❌ Bearer Token invalide ou expiré.")
                         return
                     elif resp.status != 200:
-                        await interaction.followup.send(f"❌ Erreur lors de la connexion à l'API (code: {resp.status})")
+                        await interaction.followup.send(f"❌ Erreur API (code: {resp.status})")
                         return
 
                     data = await resp.json()
@@ -57,10 +67,10 @@ class Crew(commands.Cog):
                         break
 
             if not crew:
-                await interaction.followup.send(f"❌ Aucun crew trouvé avec le nom '{crew_name}'")
+                await interaction.followup.send(f"❌ Aucun crew trouvé avec le {search_by} '{query}'")
                 return
 
-            # Récupération des champs
+            # Champs du crew
             crew_name_display = self._first_present(crew, "CrewName", "name", "crewName", default="N/A")
             crew_tag = self._first_present(crew, "CrewTag", "tag", "crewTag", default="N/A")
             crew_motto = self._first_present(crew, "CrewMotto", "motto", default="Aucune devise")
@@ -71,7 +81,7 @@ class Crew(commands.Cog):
             crew_color_hex = self._first_present(crew, "CrewColour", "CrewColor", "color", default="#FFFFFF")
             crew_id = self._first_present(crew, "CrewId", "crewId", "crewID", default="N/A")
 
-            # Date de création
+            # Date création
             created_at_raw = self._first_present(crew, "Created", "CreatedAt", "DateCreated", default=None)
             created_at_display = "N/A"
             if created_at_raw:
@@ -93,25 +103,24 @@ class Crew(commands.Cog):
             except Exception:
                 color_value = discord.Color.blue().value
 
-            # Construire embed
+            # Embed
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto,
-                url=f"https://socialclub.rockstargames.com/crew/{crew_name_display}",
+                url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
                 color=color_value
             )
 
             embed.add_field(name="👥 Membres", value=f"{member_count_int:,}", inline=True)
             embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
             embed.add_field(name="⭐ Crew Dev", value="✅ Oui" if is_dev else "❌ Non", inline=True)
-            #embed.add_field(name="👑 Fondateur", value="✅ Oui" if is_founder else "❌ Non", inline=True)
-            #embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
+            embed.add_field(name="👑 Fondateur", value="✅ Oui" if is_founder else "❌ Non", inline=True)
+            embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
             embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
             embed.add_field(name="🆔 Crew ID", value=crew_id, inline=True)
 
-            # Thumbnail du logo
-            embed.set_thumbnail(url=f"https://prod.cloud.rockstargames.com/crews/sc/6667/{crew_id}/publish/emblem/emblem_128.png")
-
+            # Thumbnail logo
+            embed.set_thumbnail(url=f"https://prod.cloud.rockstargames.com/crews/sc/0/{crew_id}/publish/emblem/emblem_128.png")
             embed.set_footer(text="Powered by Rockstar Social Club API")
 
             await interaction.followup.send(embed=embed)
