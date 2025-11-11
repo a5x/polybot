@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import aiohttp
+from datetime import datetime
 
 class Crew(commands.Cog):
     def __init__(self, bot):
@@ -46,6 +47,7 @@ class Crew(commands.Cog):
 
                     data = await resp.json()
 
+            # Récupérer le crew
             crew = None
             if isinstance(data, dict) and "Crews" in data and isinstance(data["Crews"], (list, tuple)) and data["Crews"]:
                 crew = data["Crews"][0]
@@ -72,16 +74,29 @@ class Crew(commands.Cog):
             crew_color_hex = self._first_present(crew, "CrewColour", "CrewColor", "color", default="#FFFFFF")
             crew_id = self._first_present(crew, "CrewId", "crewId", "crewID", default="N/A")
 
+            # Date de création
+            created_at_raw = self._first_present(crew, "Created", "CreatedAt", "DateCreated", default=None)
+            created_at_display = "N/A"
+            if created_at_raw:
+                try:
+                    dt = datetime.fromisoformat(created_at_raw.replace("Z", "+00:00"))
+                    created_at_display = dt.strftime("%d/%m/%Y %H:%M:%S")
+                except Exception:
+                    created_at_display = created_at_raw
+
+            # Normaliser member_count
             try:
                 member_count_int = int(str(member_count).replace(",", ""))
             except Exception:
                 member_count_int = 0
 
+            # Couleur embed
             try:
                 color_value = int(str(crew_color_hex).replace("#", ""), 16)
             except Exception:
                 color_value = discord.Color.blue().value
 
+            # Construction embed
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto,
@@ -93,6 +108,7 @@ class Crew(commands.Cog):
             embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
             embed.add_field(name="⭐ Crew Dev", value="✅ Oui" if is_dev else "❌ Non", inline=True)
             embed.add_field(name="👑 Fondateur", value="✅ Oui" if is_founder else "❌ Non", inline=True)
+            embed.add_field(name="📅 Créé le", value=created_at_display, inline=True)
             embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
             embed.add_field(name="🆔 Crew ID", value=crew_id, inline=True)
 
