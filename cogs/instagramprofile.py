@@ -26,27 +26,20 @@ class Instagram(commands.Cog):
 
                 html = await resp.text()
 
-        # Parse avec BeautifulSoup
         soup = BeautifulSoup(html, "html.parser")
 
         try:
-            # Parse des stats via og:description
             og_desc = soup.find("meta", property="og:description")["content"]
-            # Exemple : '123 Followers, 456 Following, 78 Posts - See Instagram photos and videos from John Doe (@johndoe)'
             parts = og_desc.split(" - ")[0].split(", ")
             followers = parts[0].split(" ")[0]
             following = parts[1].split(" ")[0]
             posts = parts[2].split(" ")[0]
 
-            # Nom complet (dans le tag title ou h1)
             full_name_tag = soup.find("h1")
             full_name = full_name_tag.text if full_name_tag else "Nom non trouvé"
 
-            # Bio (dans <meta name="description">)
             bio_tag = soup.find("meta", attrs={"name": "description"})
             bio = bio_tag["content"].split("(@")[0].strip() if bio_tag else "Aucune bio"
-
-            # Photo de profil
             avatar_tag = soup.find("meta", property="og:image")
             avatar_url = avatar_tag["content"] if avatar_tag else None
 
@@ -54,7 +47,6 @@ class Instagram(commands.Cog):
             await interaction.followup.send("❌ Erreur lors de l'extraction du profil.")
             return
 
-        # Embed Discord
         embed = discord.Embed(
             title=f"@{username}",
             url=url,

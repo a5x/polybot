@@ -13,7 +13,6 @@ class Roblox(commands.Cog):
     async def robloxprofile(self, interaction: discord.Interaction, username: str):
         await interaction.response.defer()
         async with aiohttp.ClientSession() as session:
-            # 1) Obtenir l'ID à partir du nom
             url_id = "https://users.roblox.com/v1/usernames/users"
             payload = {"usernames": [username], "excludeBannedUsers": False}
             async with session.post(url_id, json=payload) as resp:
@@ -22,13 +21,11 @@ class Roblox(commands.Cog):
                     return await interaction.followup.send("❌ Utilisateur introuvable.")
                 user_id = data["data"][0]["id"]
 
-            # 2) Profil général (+ isBanned, description)
             async with session.get(f"https://users.roblox.com/v1/users/{user_id}") as resp:
                 profile = await resp.json()
                 is_banned = profile.get("isBanned", False)
                 about_me = profile.get("description", "")
 
-            # 3) Présence (online/offline)
             async with session.post(
                 "https://presence.roblox.com/v1/presence/users",
                 json={"userIds": [user_id]}
@@ -38,7 +35,6 @@ class Roblox(commands.Cog):
                 ptype = pres_data.get("userPresenceType", 0)
                 status = "Online" if ptype == 1 else "Offline"
 
-            # 4) Stats sociales
             async with session.get(f"https://friends.roblox.com/v1/users/{user_id}/friends/count") as resp:
                 friends = (await resp.json()).get("count", 0)
             async with session.get(f"https://friends.roblox.com/v1/users/{user_id}/followers/count") as resp:
@@ -46,7 +42,6 @@ class Roblox(commands.Cog):
             async with session.get(f"https://friends.roblox.com/v1/users/{user_id}/followings/count") as resp:
                 followings = (await resp.json()).get("count", 0)
 
-            # 5) Avatar
             thumb_url = (
                 f"https://thumbnails.roblox.com/v1/users/avatar?"
                 f"userIds={user_id}&size=420x420&format=Png&isCircular=false"
@@ -55,7 +50,6 @@ class Roblox(commands.Cog):
                 thumb = await resp.json()
                 avatar_url = thumb.get("data", [{}])[0].get("imageUrl")
 
-            # 6) Vérification du badge “Verified” via l'inventaire
             badge_asset_id = 102611803
             async with session.get(
                 f"https://inventory.roblox.com/v1/users/{user_id}/items/Asset/{badge_asset_id}"
@@ -63,11 +57,9 @@ class Roblox(commands.Cog):
                 is_verified = (resp.status == 200)
 
 
-        # Formatage de la date de création
         created = datetime.datetime.fromisoformat(profile["created"].replace("Z", "+00:00"))
         created_str = created.strftime("%d %B %Y")
 
-        # Construction de l’embed
         embed = discord.Embed(
             title=profile.get("name", username),
             url=f"https://www.roblox.com/users/{user_id}/profile",

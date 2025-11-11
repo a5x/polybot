@@ -5,27 +5,23 @@ from psnawp_api import PSNAWP
 from .psn_embed import get_custom_embed
 import json
 import os
-import datetime  # Pour le calcul des durées et dates
+import datetime
 import base64
 import time
 import asyncio
 import requests
 
-# ——————— CONFIGURATION PSN ———————
 NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6a2PoJ5lGhpSzrAHgw7bDc")
 psnawp    = PSNAWP(NPSO_TOKEN)
 
-# ——————— CONFIGURATION GITHUB (pour synchronisation des notes) ———————
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_REPO = "a5x/polybot"
 GITHUB_NOTES_PATH = "data/note.json"
 GITHUB_BRANCH = "main"
 GITHUB_LEAK_PATH = "data/leak.json"
 
-# ——————— NOMS SPÉCIAUX POUR EMBED CUSTOM ———————
 SPECIAL_NAMES = {"V", "SS_", "OL", "ms", "qcp", "bet", "L17", "ZR"}
 
-# ——————— MAPPING DES PAYS ———————
 country_map = {
     "Afghanistan":        "Afghanistan 🇦🇫",
     "Albania":            "Albanie 🇦🇱",
@@ -235,9 +231,6 @@ country_map = {
 }
 
 def fetch_avatar_xl(user):
-    """
-    Récupère l'URL de l'avatar XL : modern -> legacy -> URL par défaut.
-    """
     try:
         avatars_modern = {e['size']: e['url'] for e in user.profile().get('avatars', [])}
         if 'xl' in avatars_modern:
@@ -256,28 +249,20 @@ def fetch_avatar_xl(user):
     return 'http://static-resource.np.community.playstation.net/avatar_xl/default/Defaultavatar_xl.png'
 
 class ProfileView(discord.ui.View):
-    """Vue Discord avec boutons pour le profil PSN.
-
-    Le bouton 'Note' ouvre une sous-vue avec 5 boutons (1-5) pour noter le PSN.
-    """
     def __init__(self, online_id: str, cog: "Psn"):
         super().__init__(timeout=None)
-        # Partager (link)
         self.add_item(discord.ui.Button(
             label="🔗 Partager le profil PSN",
             url=f"https://profile.playstation.com/share/{online_id}",
             style=discord.ButtonStyle.link
         ))
-        # Voir le profil (link)
         self.add_item(discord.ui.Button(
             label="📤 Voir le Profil PSN",
             url=f"https://profile.playstation.com/{online_id}",
             style=discord.ButtonStyle.link
         ))
-        # Note (opens rating view)
         note_btn = discord.ui.Button(label="⭐ Note", style=discord.ButtonStyle.primary)
         async def _note_callback(interaction: discord.Interaction):
-            # Open rating view (ephemeral to user)
             view = RatingView(online_id, cog, parent_message=interaction.message)
             await interaction.response.send_message(f"Noter {online_id} — Choisissez une note (1-5)", view=view, ephemeral=True)
 
@@ -286,7 +271,6 @@ class ProfileView(discord.ui.View):
 
 
 class RatingView(discord.ui.View):
-    """Vue contenant 5 boutons pour noter de 1 à 5."""
     def __init__(self, online_id: str, cog: "Psn", parent_message=None):
         super().__init__(timeout=60)
         self.online_id = online_id
@@ -300,25 +284,20 @@ class RatingView(discord.ui.View):
             self.add_item(btn)
 
     async def on_rate(self, interaction: discord.Interaction, value: int):
-        """Enregistre la note de l'utilisateur et met à jour l'embed du message parent si possible."""
         psn_key = self.online_id.lower()
         user_id = str(interaction.user.id)
-        # Prevent double-voting: if the user already voted for this PSN, refuse
         try:
             self.cog.notes.setdefault(psn_key, {})
         except Exception:
             self.cog.notes = {psn_key: {}}
 
         if user_id in self.cog.notes.get(psn_key, {}):
-            # Disable the ephemeral rating view message (remove buttons) and inform the user
             try:
                 await interaction.response.edit_message(content=f"Vous avez déjà noté **{self.online_id}**. Vous ne pouvez pas re-noter.", view=None)
             except Exception:
-                # fallback to send ephemeral
                 await interaction.response.send_message(f"Vous avez déjà noté **{self.online_id}**. Vous ne pouvez pas re-noter.", ephemeral=True)
             return
 
-        # Save the vote
         try:
             self.cog.notes[psn_key][user_id] = int(value)
             self.cog.save_notes()
@@ -329,11 +308,9 @@ class RatingView(discord.ui.View):
                 await interaction.response.send_message(f"Erreur lors de l'enregistrement de la note : {e}", ephemeral=True)
             return
 
-        # Compute average
         vals = list(self.cog.notes[psn_key].values())
         avg = sum(vals) / len(vals) if vals else 0
 
-        # Update parent embed footer to show average if parent_message was provided
         try:
             if self.parent_message and self.parent_message.embeds:
                 embed = self.parent_message.embeds[0]
@@ -348,20 +325,16 @@ class RatingView(discord.ui.View):
         except Exception:
             pass
 
-        # Remove the ephemeral rating view (replace content, remove buttons)
         try:
             await interaction.response.edit_message(content=f"Merci — vous avez noté **{value}/5**. Note moyenne : **{avg:.1f}/5**", view=None)
         except Exception:
-            # If we cannot edit (race condition), fallback to send ephemeral confirmation
             await interaction.response.send_message(f"Merci — vous avez noté **{value}/5**. Note moyenne : **{avg:.1f}/5**", ephemeral=True)
 
-        # Send a short public confirmation that will be deleted after 5 seconds to avoid flooding
         try:
             sent = await interaction.followup.send(content=f"{interaction.user.mention} a noté **{self.online_id}** — **{value}/5** (moyenne {avg:.1f}/5)")
             await asyncio.sleep(5)
             await sent.delete()
         except Exception:
-            # ignore followup errors
             pass
 
 class Psn(commands.Cog):
@@ -378,91 +351,73 @@ class Psn(commands.Cog):
             self.psn_db = {k.lower(): v for k, v in raw.items()}
         except Exception:
             self.psn_db = {}
-        # notes: { psn_lower: { discord_id: rating_int, ... }, ... }
         try:
             self.notes = json.load(open(self.NOTES_FILE, "r", encoding="utf-8")) if os.path.exists(self.NOTES_FILE) else {}
         except Exception:
             self.notes = {}
-        # leak: list of PSN accounts marked as leaked [psn1, psn2, ...]
-        # Ensure attribute exists even if loading fails
         self.leak = []
         try:
             raw_leak = json.load(open(self.LEAK_FILE, "r", encoding="utf-8")) if os.path.exists(self.LEAK_FILE) else []
-            # normalize to lowercase for case-insensitive matching
             self.leak = [str(psn).lower() for psn in raw_leak]
         except Exception:
-            # keep self.leak as [] on error
             self.leak = []
 
-        # cooldown tracking per invoking user for /psn command
         self._last_psn = {}
 
     def save_notes(self):
-        """Sauvegarde les notes localement ET les synchronise avec GitHub."""
-        # Sauvegarder localement d'abord
         os.makedirs(os.path.dirname(self.NOTES_FILE), exist_ok=True)
         json.dump(self.notes, open(self.NOTES_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         
-        # Synchroniser avec GitHub en arrière-plan
         try:
             self._sync_notes_to_github()
         except Exception as e:
-            # log but don't crash
             print(f"[PSN] Erreur lors de la synchronisation GitHub: {e}")
 
     def _sync_notes_to_github(self):
-        """Synchronise les notes vers le GitHub repo (bloquant, à appeler dans un contexte async si souhaité)."""
         if not GITHUB_TOKEN:
-            return  # Pas de token GitHub, skip
+            return
         
         try:
-            # 📥 Lire le fichier actuel depuis GitHub
             url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_NOTES_PATH}?ref={GITHUB_BRANCH}"
             headers = {"Authorization": f"token {GITHUB_TOKEN}"}
             res = requests.get(url, headers=headers)
             
             if res.status_code == 200:
-                # Fichier existe déjà
                 data = res.json()
                 sha = data["sha"]
-                # Fusionner les données: garder les notes de GitHub et les notes locales
                 try:
                     remote_notes = json.loads(base64.b64decode(data["content"]).decode())
                 except Exception:
                     remote_notes = {}
             elif res.status_code == 404:
-                # Fichier n'existe pas, créer un nouveau
                 sha = None
                 remote_notes = {}
             else:
                 print(f"[PSN] Erreur GitHub GET {res.status_code}: {res.text}")
                 return
             
-            # Fusionner: les notes locales écrasent les notes distantes
             merged = remote_notes.copy()
             for psn_key, votes in self.notes.items():
                 if psn_key not in merged:
                     merged[psn_key] = {}
                 merged[psn_key].update(votes)
             
-            # Encoder et envoyer
             content_str = json.dumps(merged, indent=2, ensure_ascii=False)
             encoded = base64.b64encode(content_str.encode()).decode()
             
             payload = {
-                "message": f"Mise à jour automatique des notes PSN via Discord bot",
+                "message": f"Update depuis discord",
                 "content": encoded,
                 "branch": GITHUB_BRANCH
             }
             if sha:
                 payload["sha"] = sha
             
-            # 📤 Push sur GitHub
             update = requests.put(url, headers=headers, json=payload)
             if update.status_code not in (200, 201):
                 print(f"[PSN] Erreur GitHub PUT {update.status_code}: {update.text}")
             else:
-                print(f"[PSN] Notes synchronisées avec GitHub avec succès")
+                print(f"[PSN] Sync avec github OK")
         except Exception as e:
             print(f"[PSN] Exception lors de la sync GitHub: {e}")
 
@@ -479,12 +434,10 @@ class Psn(commands.Cog):
     @app_commands.command(name="psn", description="Affiche les infos publiques d’un profil PSN ou embed custom pour certains noms")
     @app_commands.describe(pseudo="Pseudo PSN à inspecter")
     async def psn(self, interaction: discord.Interaction, pseudo: str):
-        # Embed custom pour pseudos spéciaux
         if pseudo in SPECIAL_NAMES:
             embed = get_custom_embed(pseudo)
             return await interaction.response.send_message(embed=embed)
-
-        # cooldown: 30 secondes par utilisateur
+        
         now = time.time()
         last = self._last_psn.get(interaction.user.id)
         if last and (now - last) < 30:
@@ -502,7 +455,6 @@ class Psn(commands.Cog):
             user    = psnawp.user(online_id=pseudo)
             profile = user.profile()
 
-            # Présence, statut et plateforme
             try:
                 basic = user.get_presence()["basicPresence"]
                 st = basic["primaryPlatformInfo"]["onlineStatus"]
@@ -513,7 +465,6 @@ class Psn(commands.Cog):
                 basic = None
                 status_str = "Privé"
 
-            # Récupération des infos de base
             account_id   = user.account_id
             current_id   = user.online_id
             about_me     = profile.get("aboutMe", "").strip() or "Aucune bio"
@@ -526,12 +477,10 @@ class Psn(commands.Cog):
             avatar_url   = fetch_avatar_xl(user)
             banner_url   = f"https://image.api.playstation.com/profile/images/acct/prod/{account_id}/profile.JPEG"
 
-            # Conversion en HEX et Chiaki
             hex_aid    = hex(int(account_id))[2:]
             aid_bytes  = int(account_id).to_bytes(8, 'big')
             chiaki_aid = base64.b64encode(aid_bytes).decode()
 
-            # Construction de l'embed principal
             embed = discord.Embed(title="Profil PSN", color=0x0094FF)
             embed.set_thumbnail(url=avatar_url)
             embed.set_image(url=banner_url)
@@ -547,7 +496,6 @@ class Psn(commands.Cog):
             embed.add_field(name="Langue", value=langue, inline=True)
             embed.add_field(name="PlayStation Plus <:psplus:1397614330601799873>", value=ps_plus, inline=True)
 
-            # Jeu en cours
             if basic:
                 games_info = basic.get("gameTitleInfoList", [])
                 if games_info:
@@ -563,7 +511,6 @@ class Psn(commands.Cog):
                     if jeux:
                         embed.add_field(name="Jeu en cours <:jeu:1397760534530625677>", value="\n".join(jeux), inline=False)
 
-            # Trophées
             try:
                 summary = user.trophy_summary()
                 e = summary.earned_trophies
@@ -585,7 +532,6 @@ class Psn(commands.Cog):
                 embed.add_field(name="Total Trophées <:trph:1397758357464416369>", value="Privé", inline=True)
                 embed.add_field(name="Nombre de jeux", value="Privé", inline=True)
 
-            # Amis
             try:
                 stats = user.friendship()
                 count = stats.get("friendsCount", 0)
@@ -594,7 +540,6 @@ class Psn(commands.Cog):
             except Exception:
                 embed.add_field(name="Amis <:amis:1397758314036596897>", value="Privé", inline=True)
 
-            # Stats de jeu
             try:
                 stats_list = list(user.title_stats())
                 if stats_list:
@@ -611,16 +556,13 @@ class Psn(commands.Cog):
             except Exception:
                 pass
 
-            # Date de création custom
             if key in self.psn_db:
                 embed.add_field(name="Date de création", value=self.psn_db[key], inline=False)
 
-            # Leak status
             if current_id.lower() in [leak.lower() for leak in self.leak]:
                 embed.add_field(name="Leak", value="Oui", inline=False)
 
             embed.add_field(name="À propos", value=about_me, inline=False)
-            # Add average note to footer if exists
             note_footer = ""
             psn_notes = self.notes.get(key, {})
             if psn_notes:

@@ -21,7 +21,6 @@ class StatusBot(commands.Cog):
         self.bot = bot
 
     async def setup_hook(self) -> None:
-        # Appelé après l'ajout du cog, contexte asynchrone disponible
         data = load_status()
         status_map = {
             "online": discord.Status.online,
@@ -71,9 +70,7 @@ class StatusBot(commands.Cog):
         )
 
 async def setup(bot):
-    # setup_hook nécessite bot.add_cog via cog's async setup
     cog = StatusBot(bot)
     bot.add_cog(cog)
-    # si discord.py >=2.4, appeler setup_hook manuellement:
     if hasattr(cog, 'setup_hook'):
         await cog.setup_hook()

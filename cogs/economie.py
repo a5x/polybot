@@ -24,13 +24,11 @@ class Economie(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        # code pou le /
         economie_group = app_commands.Group(
             name="economie",
             description="Commandes pour l'économie 💰"
         )
 
-        # ✅ /economie balance [membre]
         @economie_group.command(
             name="balance",
             description="Affiche votre solde ou celui d'un autre membre 💰"
@@ -51,7 +49,6 @@ class Economie(commands.Cog):
                     f"{target.mention}, votre solde est de {solde}€."
                 )
 
-        # ✅ /economie claim qui permet de recup la thune
         @economie_group.command(
             name="claim",
             description="Réclamez votre bonus quotidien 💸"
@@ -82,7 +79,6 @@ class Economie(commands.Cog):
                 f"{interaction.user.mention}, vous avez reçu {CLAIM_BONUS}€ ! Nouveau solde : {user_data['balance']}€."
             )
 
-        # ✅ /economie leaderboard
         @economie_group.command(
             name="leaderboard",
             description="Montre le top 10 des joueurs les plus riches 🏆"
@@ -90,7 +86,6 @@ class Economie(commands.Cog):
         async def leaderboard(interaction: discord.Interaction):
             data = load_data()
 
-            # Trier les utilisateurs par balance
             top = sorted(
                 data.items(),
                 key=lambda x: x[1].get("balance", 0),
@@ -113,7 +108,6 @@ class Economie(commands.Cog):
 
             await interaction.response.send_message(embed=embed)
 
-        # evite les doublons
         if not any(cmd.name == economie_group.name for cmd in self.bot.tree.get_commands()):
             self.bot.tree.add_command(economie_group)
 

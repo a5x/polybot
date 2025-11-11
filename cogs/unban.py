@@ -7,7 +7,6 @@ class Mods(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        # affiche le / dans le serv
         @app_commands.command(
             name="unban",
             description="Débannir un utilisateur du serveur via son ID."
@@ -17,7 +16,6 @@ class Mods(commands.Cog):
             raison="La raison du débannissement"
         )
         async def unban(interaction: discord.Interaction, user_id: str, raison: str = "Aucune raison donnée"):
-            #  Vérifie les perm
             if not interaction.user.guild_permissions.ban_members:
                 await interaction.response.send_message(
                     "Vous n'avez pas la permission de débannir des membres.",
@@ -49,7 +47,6 @@ class Mods(commands.Cog):
                     ephemeral=True
                 )
 
-        # Ajout
         self.bot.tree.add_command(unban)
 
 async def setup(bot):

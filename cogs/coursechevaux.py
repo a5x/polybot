@@ -6,7 +6,6 @@ import json
 import os
 import asyncio
 
-# ----------- BANK SYSTEM (intégré) -----------
 BANK_FILE = "data/members_banks.json"
 
 def load_banks():
@@ -35,7 +34,6 @@ def get_balance(user_id):
         save_banks(banks)
     return banks[user_id]["balance"]
 
-# ----------- GAME LOGIC -----------
 active_races = {}
 
 class CourseChevauxGame:
@@ -43,7 +41,7 @@ class CourseChevauxGame:
         self.host_id = host_id
         self.players = set()
         self.started = False
-        self.bets = {}  # user_id -> {"amount": int, "horse": int}
+        self.bets = {}
         self.total_pot = 0
 
     def add_player(self, user_id):
@@ -59,7 +57,6 @@ class CourseChevauxGame:
     def all_have_bet(self):
         return len(self.bets) == len(self.players)
 
-# ----------- JOIN VIEW -----------
 class CourseView(discord.ui.View):
     def __init__(self, game: CourseChevauxGame, channel_id, bot):
         super().__init__(timeout=None)
@@ -103,7 +100,6 @@ class CourseView(discord.ui.View):
             view=BetMenuView(self.game, channel, self.bot)
         )
 
-# ----------- BET MENU VIEW -----------
 class BetMenuView(discord.ui.View):
     def __init__(self, game: CourseChevauxGame, channel, bot):
         super().__init__(timeout=120)
@@ -149,7 +145,6 @@ class BetMenuView(discord.ui.View):
 
         await self.check_all_bets()
 
-    # Boutons de mise
     @discord.ui.button(label="25", style=discord.ButtonStyle.secondary)
     async def bet_25(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.handle_bet(interaction, amount=25)
@@ -191,7 +186,6 @@ class BetMenuView(discord.ui.View):
     async def horse_6(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.handle_bet(interaction, horse=6)
 
-# ----------- COURSE LOGIC WITH ANIMATION -----------
 async def run_race(channel, game: CourseChevauxGame):
     horses = [1, 2, 3, 4, 5, 6]
     steps = random.randint(3, 5)
@@ -222,7 +216,6 @@ async def run_race(channel, game: CourseChevauxGame):
 
     active_races.pop(channel.id, None)
 
-# ----------- COG -----------
 class CourseChevaux(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

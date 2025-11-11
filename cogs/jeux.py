@@ -8,7 +8,6 @@ class Jeux(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        # ✅ Déclare le groupe dynamique dans cog_load
         jeux_group = app_commands.Group(
             name="jeux",
             description="Commandes de jeux 🎲"
@@ -24,7 +23,6 @@ class Jeux(commands.Cog):
             side = random.choice(["Pile", "Face"])
             await interaction.response.send_message(f"🪙 Le résultat est : {side}")
 
-        # ✅ Vérifie avant d'ajouter
         if not any(cmd.name == jeux_group.name for cmd in self.bot.tree.get_commands()):
             self.bot.tree.add_command(jeux_group)
 

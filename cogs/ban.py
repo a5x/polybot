@@ -7,7 +7,6 @@ class Mod(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        # ✅ Commande slash déclarée dans cog_load comme jeux.py
         @app_commands.command(
             name="ban",
             description="Bannir un membre du serv."
@@ -17,7 +16,6 @@ class Mod(commands.Cog):
             raison="La raison du bannissement"
         )
         async def ban(interaction: discord.Interaction, membre: discord.Member, raison: str = "Aucune raison donnée"):
-            # ✅ Vérifie les permissions de l'utilisateur qui exécute la commande
             if not interaction.user.guild_permissions.ban_members:
                 await interaction.response.send_message(
                     " Vous n'avez pas la permission de bannir des membres.",
@@ -25,7 +23,6 @@ class Mod(commands.Cog):
                 )
                 return
 
-            # ✅ Vérifie que le bot a la permission
             if not interaction.guild.me.guild_permissions.ban_members:
                 await interaction.response.send_message(
                     " Je n'ai pas la permission de bannir des membres sur ce serveur ❌❌❌❌.",
@@ -33,7 +30,6 @@ class Mod(commands.Cog):
                 )
                 return
 
-            # ✅ Essaye de bannir
             try:
                 await membre.ban(reason=raison)
                 await interaction.response.send_message(
@@ -45,7 +41,6 @@ class Mod(commands.Cog):
                     ephemeral=True
                 )
 
-        # ✅ Ajoute la commande à l'arbre de commandes
         self.bot.tree.add_command(ban)
 
 async def setup(bot):

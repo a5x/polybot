@@ -5,7 +5,6 @@ import random
 import json
 import os
 
-# ----------- BANK SYSTEM (copié dedans) -----------
 BANK_FILE = "data/members_banks.json"
 
 def load_banks():
@@ -34,7 +33,6 @@ def get_balance(user_id):
         save_banks(banks)
     return banks[user_id]["balance"]
 
-# ----------- Blackjack COG -----------
 class Blackjack(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -68,7 +66,6 @@ class Blackjack(commands.Cog):
             view=BlackjackBetView(self.bot, interaction.user, interaction.channel)
         )
 
-# ----------- Bet View -----------
 class BlackjackBetView(discord.ui.View):
     def __init__(self, bot, user, channel):
         super().__init__(timeout=60)
@@ -129,7 +126,6 @@ class BlackjackBetView(discord.ui.View):
     async def bet_100(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.handle_bet(interaction, 100)
 
-# ----------- Play View -----------
 class BlackjackPlayView(discord.ui.View):
     def __init__(self, bot, user, channel, player_cards, dealer_cards, bet):
         super().__init__(timeout=120)
@@ -201,6 +197,5 @@ class BlackjackPlayView(discord.ui.View):
 
         await self.end_game(interaction, result)
 
-# ----------- Setup function -----------
 async def setup(bot):
     await bot.add_cog(Blackjack(bot))

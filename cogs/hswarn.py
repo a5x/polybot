@@ -38,7 +38,6 @@ class HSWarn(commands.Cog):
                 )
                 return
 
-            # Crée la liste formatée
             warn_list = "\n".join([f"{idx+1}. {reason}" for idx, reason in enumerate(user_warns)])
 
             embed = discord.Embed(
@@ -49,7 +48,6 @@ class HSWarn(commands.Cog):
 
             await interaction.response.send_message(embed=embed)
 
-        # ✅ Ajout de la commande
         self.bot.tree.add_command(hswarn)
 
 async def setup(bot):

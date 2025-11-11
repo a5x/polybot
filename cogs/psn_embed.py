@@ -2,11 +2,6 @@ import discord
 
 
 def get_custom_embed(name: str) -> discord.Embed:
-    """
-    Retourne un Embed personnalisé pour certains pseudos spéciaux,
-    en suivant le style général des embeds PSN (thumbnail, image, champs, footer).
-    """
-    # Cartes de style
     color_map = {
         "V": 0x0094FF,
         "ZR": 0x0094FF,
@@ -41,14 +36,11 @@ def get_custom_embed(name: str) -> discord.Embed:
     }
 
 
-    # Création de l'embed
     embed = discord.Embed(
         title=title_map.get(name, f"Profil {name}"),
         description=desc_map.get(name, "Profil personnalisé."),
         color=color_map.get(name, 0x2ECC71)
     )
-    # Thumbnail et bannière pour respecter le style
-    # Champs spécifiques
     if name == "V":
         embed.add_field(name="Status", value="Privé", inline=True)
         embed.add_field(name="Account ID <:aid:1397760504457465879>", value="-", inline=True)
@@ -151,11 +143,9 @@ def get_custom_embed(name: str) -> discord.Embed:
         embed.add_field(name="A propros", value="Gucci Demon.", inline=True)
         embed.set_thumbnail(url="https://psn-rsc.prod.dl.playstation.net/psn-rsc/avatar/UT0016/CUSA06833_00-AV00000000000001_72E7CFC37BB24D706E60_xl.png")
 
-    # Footer unifié
     embed.set_footer(text="Profil PSN")
     return embed
 
 async def setup(bot):
-    # Permet de charger ce module sans cog spécifique
     pass
 

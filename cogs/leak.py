@@ -14,24 +14,19 @@ BRANCH = "main"
 class LeakCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    # 💠 Slash Command
     @app_commands.command(name="leak", description="Ajoute un PSN dans leak.json (admin uniquement)")
     @app_commands.describe(pseudo="Le pseudo PSN à marquer comme leak")
     async def leak(self, interaction: discord.Interaction, pseudo: str):
-        # 🔐 Vérification : admin uniquement
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("Tu dois être **admin** pour utiliser cette commande.", ephemeral=True)
 
         await interaction.response.defer()
 
-        # 📥 Lire depuis GitHub
         url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}?ref={BRANCH}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
         res = requests.get(url, headers=headers)
         
         if res.status_code == 200:
-            # Fichier existe déjà
             data = res.json()
             sha = data["sha"]
             try:
@@ -39,22 +34,18 @@ class LeakCog(commands.Cog):
             except Exception:
                 content = []
         elif res.status_code == 404:
-            # Fichier n'existe pas, créer un nouveau
             sha = None
             content = []
         else:
             return await interaction.followup.send("Erreur de lecture du fichier JSON sur GitHub.")
 
-        # ➕ Ajouter le pseudo s'il n'existe pas déjà
         if pseudo not in content:
             content.append(pseudo)
         
-        # Trier la liste
         content.sort()
 
         encoded = base64.b64encode(json.dumps(content, indent=2, ensure_ascii=False).encode()).decode()
 
-        # 📤 Push sur GitHub
         payload = {
             "message": f"Ajout de {pseudo} à leak.json via Discord",
             "content": encoded,
@@ -70,6 +61,5 @@ class LeakCog(commands.Cog):
         else:
             await interaction.followup.send("Échec de la mise à jour GitHub.")
 
-# Charger le cog
 async def setup(bot: commands.Bot):
     await bot.add_cog(LeakCog(bot))

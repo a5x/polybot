@@ -4,10 +4,8 @@ from discord import app_commands
 import json
 import os
 
-# Chemin du fichier pour stocker les warns
 WARN_FILE = "data/warn.json"
 
-# Fonctions pour le json
 def load_warns():
     if not os.path.exists(WARN_FILE):
         with open(WARN_FILE, "w") as f:
@@ -33,7 +31,6 @@ class Warn(commands.Cog):
             raison="La raison du warn"
         )
         async def warn(interaction: discord.Interaction, membre: discord.Member, raison: str):
-            #  Vérifie permissions des membres
             if not interaction.user.guild_permissions.manage_messages:
                 await interaction.response.send_message(
                     " Vous n'avez pas la permission de gérer les messages (requis pour warn).",
@@ -41,7 +38,6 @@ class Warn(commands.Cog):
                 )
                 return
 
-            #  Vérifie permissions bot
             if not interaction.guild.me.guild_permissions.manage_messages:
                 await interaction.response.send_message(
                     " Je n'ai pas la permission de gérer les messages sur ce serveur.",
@@ -49,7 +45,6 @@ class Warn(commands.Cog):
                 )
                 return
 
-            #  Charge les données du fichier
             warns = load_warns()
             user_id = str(membre.id)
 
@@ -62,7 +57,6 @@ class Warn(commands.Cog):
                 f" {membre.mention} a reçu un avertissement ✅.\n**Raison :** {raison}"
             )
 
-        #  Ajoute la commande au /
         self.bot.tree.add_command(warn)
 
 async def setup(bot):

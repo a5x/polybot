@@ -31,16 +31,13 @@ class RouletteRusseGame:
         return self.alive_players[self.current_index]
 
     def fire(self):
-        # 1 chance sur 6 de mourir
         bullet = random.randint(1, 6)
         if bullet == 1:
             eliminated = self.alive_players.pop(self.current_index)
-            # Si encore des joueurs, on remet l'index au bon endroit
             if self.current_index >= len(self.alive_players):
                 self.current_index = 0
             return eliminated
         else:
-            # Tour suivant
             self.current_index = (self.current_index + 1) % len(self.alive_players)
             return None
 

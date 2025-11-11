@@ -23,7 +23,6 @@ class TempMute(commands.Cog):
             temps: int,
             raison: str = "Aucune raison donnée"
         ):
-            # Vérifie permissions des membres
             if not interaction.user.guild_permissions.moderate_members:
                 await interaction.response.send_message(
                     " Vous n'avez pas la permission de mute des membres ❌.",
@@ -31,7 +30,6 @@ class TempMute(commands.Cog):
                 )
                 return
 
-            # Vérifie perm bot
             if not interaction.guild.me.guild_permissions.moderate_members:
                 await interaction.response.send_message(
                     "Je n'ai pas la permission de mute des membres sur ce serveur ❌.",
@@ -39,7 +37,6 @@ class TempMute(commands.Cog):
                 )
                 return
 
-            # Vérifie la hiérarchie des roles 
             if membre.top_role >= interaction.guild.me.top_role:
                 await interaction.response.send_message(
                     "Je ne peux pas mute ce membre (son rôle est plus haut ou égal au mien) ❌.",
@@ -47,8 +44,7 @@ class TempMute(commands.Cog):
                 )
                 return
 
-            # Vérifie durée 
-            if temps <= 0 or temps > 40320:  # 28 jours max
+            if temps <= 0 or temps > 40320:
                 await interaction.response.send_message(
                     "La durée doit être comprise entre 1 et 40320 minutes (28 jours).",
                     ephemeral=True

@@ -5,7 +5,6 @@ import random
 import json
 import os
 
-# Chemins vers les fichiers JSON
 INVENTAIRES_FILE = "data/inventaires.json"
 BANKS_FILE = "data/members_banks.json"
 COOLDOWNS_FILE = "data/peche_cooldowns.json"
@@ -28,7 +27,6 @@ class Peche(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        # Déf des poissons avec leurs chances et valeurs
         self.fish_data = [
             {"name": "Commun", "value": 5, "chance": 51},
             {"name": "Uncommon", "value": 10, "chance": 25},
@@ -47,7 +45,6 @@ class Peche(commands.Cog):
         return self.fish_data[0]
 
     async def cog_load(self):
-        # ✅ Commande /peche
         @app_commands.command(name="peche", description="Pêche un poisson aléatoire (avec cooldown).")
         async def peche(interaction: discord.Interaction):
             user_id = str(interaction.user.id)
@@ -61,7 +58,6 @@ class Peche(commands.Cog):
                 "block_until": 0
             })
 
-            # Vérifier le cooldown de 2h30
             if user_data.get("block_until", 0) > now:
                 remaining = user_data["block_until"] - now
                 minutes, seconds = divmod(remaining, 60)
@@ -71,7 +67,6 @@ class Peche(commands.Cog):
                     ephemeral=True
                 )
 
-            # Vérifier cooldown de 2 minutes pour eviter le farrm intensif
             last_time = user_data.get("last_peche", 0)
             if now - last_time < 120:
                 wait = 120 - (now - last_time)
@@ -81,21 +76,17 @@ class Peche(commands.Cog):
                     ephemeral=True
                 )
 
-            # autorise la peche
             fish = self.get_random_fish()
 
             if user_id not in inventaires:
                 inventaires[user_id] = []
             inventaires[user_id].append(fish["name"])
             save_data(INVENTAIRES_FILE, inventaires)
-
-            # Mettre à jour les données cooldown dans le fichier
             user_data["last_peche"] = now
             user_data["count"] += 1
 
-            # Vérifier si on atteint 6 pêches = bloquer 2h30
             if user_data["count"] >= 6:
-                user_data["block_until"] = now + (2 * 60 * 60 + 30 * 60)  # 2h30
+                user_data["block_until"] = now + (2 * 60 * 60 + 30 * 60) 
                 user_data["count"] = 0
                 await interaction.response.send_message(
                     f"🎣 Vous avez pêché un **{fish['name']}** qui vaut **{fish['value']} pièces** !\n"
@@ -110,7 +101,6 @@ class Peche(commands.Cog):
             cooldowns[user_id] = user_data
             save_data(COOLDOWNS_FILE, cooldowns)
 
-        #  Commande /inventaire
         @app_commands.command(name="inventaire", description="Voir et vendre votre inventaire de poissons.")
         async def inventaire(interaction: discord.Interaction):
             user_id_str = str(interaction.user.id)
@@ -121,14 +111,12 @@ class Peche(commands.Cog):
                 await interaction.response.send_message("Votre inventaire est vide 🎣.")
                 return
 
-            # Compter les types de poissons
             counts = {}
             for fish in user_inv:
                 counts[fish] = counts.get(fish, 0) + 1
 
             desc = "\n".join([f"**{name}** × {count}" for name, count in counts.items()])
 
-            # Bouton Vendre tout
             class SellButton(discord.ui.View):
                 def __init__(self, parent):
                     super().__init__(timeout=60)
@@ -140,7 +128,6 @@ class Peche(commands.Cog):
                         await interaction2.response.send_message("Ce n'est pas votre inventaire ! ❌ ", ephemeral=True)
                         return
 
-                    # Recharger l'inventaire apres le jeux
                     inventaires = load_data(INVENTAIRES_FILE)
                     user_inv = inventaires.get(user_id_str, [])
 
@@ -148,18 +135,15 @@ class Peche(commands.Cog):
                         await interaction2.response.send_message("Votre inventaire est vide ❌.", ephemeral=True)
                         return
 
-                    # Calcul de la valeur totale des gains de con
                     total_value = 0
                     for fish_name in user_inv:
                         fish_info = next((f for f in self.parent.fish_data if f["name"] == fish_name), None)
                         if fish_info:
                             total_value += fish_info["value"]
 
-                    # Vider l'inventaire du joueur
                     inventaires[user_id_str] = []
                     save_data(INVENTAIRES_FILE, inventaires)
 
-                    # Créditer les thunes dans les soldes
                     banks = load_data(BANKS_FILE)
                     if user_id_str not in banks:
                         banks[user_id_str] = {"balance": total_value}
@@ -183,7 +167,6 @@ class Peche(commands.Cog):
             )
             await interaction.response.send_message(embed=embed, view=SellButton(self))
 
-        # ✅ Ajout 
         self.bot.tree.add_command(peche)
         self.bot.tree.add_command(inventaire)
 

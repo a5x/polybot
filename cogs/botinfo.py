@@ -5,7 +5,7 @@ from discord import app_commands
 class BotInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot_owner_id = 833997795416473620  # Remplace par ton ID Discord
+        self.bot_owner_id = 833997795416473620
 
     async def cog_load(self):
         @app_commands.command(name="botinfo", description="Affiche les infos du bot")

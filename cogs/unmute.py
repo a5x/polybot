@@ -15,7 +15,6 @@ class Unmute(commands.Cog):
             membre="Le membre à unmute"
         )
         async def unmute(interaction: discord.Interaction, membre: discord.Member):
-            # Vérifie permissions des membres
             if not interaction.user.guild_permissions.manage_roles:
                 await interaction.response.send_message(
                     "Vous n'avez pas la permission de gérer les rôles.",
@@ -23,7 +22,6 @@ class Unmute(commands.Cog):
                 )
                 return
 
-            # Vérifie permissions bot dans le serv
             if not interaction.guild.me.guild_permissions.manage_roles:
                 await interaction.response.send_message(
                     "Je n'ai pas la permission de gérer les rôles sur ce serveur.",
@@ -31,7 +29,6 @@ class Unmute(commands.Cog):
                 )
                 return
 
-            #  Vérifie la hiérarchie des rôles du serv
             if membre.top_role >= interaction.guild.me.top_role:
                 await interaction.response.send_message(
                     "Je ne peux pas unmute ce membre (son rôle est plus haut ou égal au mien).",
@@ -39,7 +36,6 @@ class Unmute(commands.Cog):
                 )
                 return
 
-            # Cherche le rôle Mute dans les roles du serv
             muted_role = discord.utils.get(interaction.guild.roles, name="mute")
             if muted_role is None:
                 await interaction.response.send_message(
@@ -48,7 +44,6 @@ class Unmute(commands.Cog):
                 )
                 return
 
-            # Vérifie s'il a le rôle de con
             if muted_role not in membre.roles:
                 await interaction.response.send_message(
                     f" {membre.mention} n'a pas le rôle Mute !.",
@@ -67,7 +62,6 @@ class Unmute(commands.Cog):
                     ephemeral=True
                 )
 
-        # Ajout 
         self.bot.tree.add_command(unmute)
 
 async def setup(bot):

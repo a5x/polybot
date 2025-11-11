@@ -65,7 +65,7 @@ class FermerTicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(FermerButton())
 
-import asyncio  # ← AJOUT 
+import asyncio 
 
 class FermerButton(discord.ui.Button):
     def __init__(self):
