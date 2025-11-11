@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from psnawp_api import PSNAWP, PSNAWPException
+from psnawp_api import PSNAWP
 from .psn_embed import get_custom_embed
 import json
 import os
@@ -518,5 +518,6 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
+
 
 
