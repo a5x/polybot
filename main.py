@@ -50,6 +50,7 @@ COGS = [
     "cogs.instagramprofile",
     "cogs.psn",
     "cogs.psn_embed",
+    "cogs.leak"
     "cogs.db",
 ]
 
