@@ -163,6 +163,9 @@ class KickProfile(commands.Cog):
 		if user_fields.get('created_at'):
 			embed.add_field(name="Créé le", value=user_fields.get('created_at'), inline=True)
 
+		if user_fields.get('email_verified_at'):
+			embed.add_field(name="Email vérifié le", value=user_fields.get('email_verified_at'), inline=True)
+
 		socials = []
 		for s in ('instagram', 'twitter', 'youtube', 'tiktok', 'discord', 'facebook'):
 			v = user_fields.get(s)
@@ -176,5 +179,4 @@ class KickProfile(commands.Cog):
 
 async def setup(bot):
 	await bot.add_cog(KickProfile(bot))
-
 
