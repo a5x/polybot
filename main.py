@@ -48,6 +48,7 @@ COGS = [
     "cogs.psn_embed",
     "cogs.leak",
     "cogs.db",
+    "cogs.kickprofile",
 ]
 
 async def load_extensions(bot: commands.Bot):
