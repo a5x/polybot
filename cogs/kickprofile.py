@@ -161,7 +161,15 @@ class KickProfile(commands.Cog):
 			embed.add_field(name="Localisation", value=location or "N/A", inline=True)
 
 		if user_fields.get('created_at'):
-			embed.add_field(name="Créé le", value=user_fields.get('created_at'), inline=True)
+			created_date = user_fields.get('created_at')
+			if created_date and 'T' in str(created_date):
+				try:
+					from datetime import datetime
+					dt = datetime.fromisoformat(str(created_date).replace('Z', '+00:00'))
+					created_date = dt.strftime("%d/%m/%Y à %H:%M")
+				except Exception:
+					pass
+			embed.add_field(name="Créé le", value=created_date, inline=True)
 
 		if user_fields.get('email_verified_at'):
 			embed.add_field(name="Email vérifié le", value=user_fields.get('email_verified_at'), inline=True)
