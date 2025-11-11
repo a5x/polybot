@@ -1,12 +1,13 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from psnawp_api import PSNAWP
+from psnawp_api import PSNAWP, PSNAWPException
 from .psn_embed import get_custom_embed
 import json
 import os
 import datetime  # Pour le calcul des durées et dates
 import base64
+import time
 
 # ——————— CONFIGURATION PSN ———————
 NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6a2PoJ5lGhpSzrAHgw7bDc")
@@ -246,23 +247,88 @@ def fetch_avatar_xl(user):
     return 'http://static-resource.np.community.playstation.net/avatar_xl/default/Defaultavatar_xl.png'
 
 class ProfileView(discord.ui.View):
-    """Vue Discord avec boutons pour le profil PSN."""
-    def __init__(self, online_id: str):
+    """Vue Discord avec boutons pour le profil PSN.
+
+    Le bouton 'Note' ouvre une sous-vue avec 5 boutons (1-5) pour noter le PSN.
+    """
+    def __init__(self, online_id: str, cog: "Psn"):
         super().__init__(timeout=None)
+        # Partager (link)
         self.add_item(discord.ui.Button(
             label="🔗 Partager le profil PSN",
             url=f"https://profile.playstation.com/share/{online_id}",
             style=discord.ButtonStyle.link
         ))
+        # Voir le profil (link)
         self.add_item(discord.ui.Button(
             label="📤 Voir le Profil PSN",
             url=f"https://profile.playstation.com/{online_id}",
             style=discord.ButtonStyle.link
         ))
+        # Note (opens rating view)
+        note_btn = discord.ui.Button(label="⭐ Note", style=discord.ButtonStyle.primary)
+        async def _note_callback(interaction: discord.Interaction):
+            # Open rating view (ephemeral to user)
+            view = RatingView(online_id, cog, parent_message=interaction.message)
+            await interaction.response.send_message(f"Noter {online_id} — Choisissez une note (1-5)", view=view, ephemeral=True)
+
+        note_btn.callback = _note_callback
+        self.add_item(note_btn)
+
+
+class RatingView(discord.ui.View):
+    """Vue contenant 5 boutons pour noter de 1 à 5."""
+    def __init__(self, online_id: str, cog: "Psn", parent_message=None):
+        super().__init__(timeout=60)
+        self.online_id = online_id
+        self.cog = cog
+        self.parent_message = parent_message
+        for i in range(1, 6):
+            btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary)
+            async def make_callback(interaction: discord.Interaction, value=i):
+                await self.on_rate(interaction, value)
+            btn.callback = make_callback
+            self.add_item(btn)
+
+    async def on_rate(self, interaction: discord.Interaction, value: int):
+        """Enregistre la note de l'utilisateur et met à jour l'embed du message parent si possible."""
+        psn_key = self.online_id.lower()
+        user_id = str(interaction.user.id)
+
+        # Ensure data path
+        try:
+            self.cog.notes.setdefault(psn_key, {})
+            self.cog.notes[psn_key][user_id] = int(value)
+            self.cog.save_notes()
+        except Exception as e:
+            await interaction.response.send_message(f"Erreur lors de l'enregistrement de la note : {e}", ephemeral=True)
+            return
+
+        # Compute average
+        vals = list(self.cog.notes[psn_key].values())
+        avg = sum(vals) / len(vals) if vals else 0
+
+        # Update parent embed footer to show average if parent_message was provided
+        try:
+            if self.parent_message and self.parent_message.embeds:
+                embed = self.parent_message.embeds[0]
+                check_text = embed.footer.text or ""
+                if 'Nombre de' in check_text:
+                    left = check_text.split('•')[0].strip()
+                else:
+                    left = f"Nombre de checks : ?"
+                new_footer = f"{left} • Note : {avg:.1f}/5"
+                embed.set_footer(text=new_footer)
+                await self.parent_message.edit(embed=embed)
+        except Exception:
+            pass
+
+        await interaction.response.send_message(f"Vous avez noté **{value}/5** pour **{self.online_id}**. Note moyenne : **{avg:.1f}/5**", ephemeral=True)
 
 class Psn(commands.Cog):
     COUNTS_FILE = "data/psn_counts.json"
     DB_FILE     = "data/psn_db.json"
+    NOTES_FILE  = "data/note.json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -272,6 +338,17 @@ class Psn(commands.Cog):
             self.psn_db = {k.lower(): v for k, v in raw.items()}
         except Exception:
             self.psn_db = {}
+        # notes: { psn_lower: { discord_id: rating_int, ... }, ... }
+        try:
+            self.notes = json.load(open(self.NOTES_FILE, "r", encoding="utf-8")) if os.path.exists(self.NOTES_FILE) else {}
+        except Exception:
+            self.notes = {}
+        # cooldown tracking per invoking user for /psn command
+        self._last_psn = {}
+
+    def save_notes(self):
+        os.makedirs(os.path.dirname(self.NOTES_FILE), exist_ok=True)
+        json.dump(self.notes, open(self.NOTES_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -290,6 +367,14 @@ class Psn(commands.Cog):
         if pseudo in SPECIAL_NAMES:
             embed = get_custom_embed(pseudo)
             return await interaction.response.send_message(embed=embed)
+
+        # cooldown: 30 secondes par utilisateur
+        now = time.time()
+        last = self._last_psn.get(interaction.user.id)
+        if last and (now - last) < 30:
+            remaining = int(30 - (now - last))
+            return await interaction.response.send_message(f"Vous devez attendre {remaining}s avant de réutiliser cette commande.", ephemeral=True)
+        self._last_psn[interaction.user.id] = now
 
         await interaction.response.defer()
         key = pseudo.lower()
@@ -415,9 +500,17 @@ class Psn(commands.Cog):
                 embed.add_field(name="Date de création", value=self.psn_db[key], inline=False)
 
             embed.add_field(name="À propos", value=about_me, inline=False)
-            embed.set_footer(text=f"Nombre de {'checks' if check_count==1 else 'checks'} : {check_count}")
+            # Add average note to footer if exists
+            note_footer = ""
+            psn_notes = self.notes.get(key, {})
+            if psn_notes:
+                vals = list(psn_notes.values())
+                avg = sum(vals) / len(vals)
+                note_footer = f" • Note : {avg:.1f}/5"
 
-            view = ProfileView(current_id)
+            embed.set_footer(text=f"Nombre de {'checks' if check_count==1 else 'checks'} : {check_count}{note_footer}")
+
+            view = ProfileView(current_id, self)
             await interaction.followup.send(embed=embed, view=view)
 
         except Exception as e:
