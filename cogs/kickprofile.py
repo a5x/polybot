@@ -17,7 +17,7 @@ class KickProfile(commands.Cog):
 	async def kickprofile(self, interaction: discord.Interaction, username: str):
 		await interaction.response.defer()
 
-		url = f"https://kick.com/{username}"
+		url = f"https://kick.com/api/v2/channels/{username}"
 		headers = {
 			"User-Agent": "Mozilla/5.0"
 		}
@@ -32,15 +32,12 @@ class KickProfile(commands.Cog):
 
 		soup = BeautifulSoup(html, "html.parser")
 
-		# Try to find structured JSON data embedded in the page (Next.js __NEXT_DATA__ or other scripts)
 		data = None
 		for script in soup.find_all('script'):
 			txt = script.string
 			if not txt:
 				continue
 			txt = txt.strip()
-
-			# Common Next.js data container
 			if script.get('id') == '__NEXT_DATA__':
 				try:
 					data = json.loads(txt)
@@ -48,15 +45,12 @@ class KickProfile(commands.Cog):
 				except Exception:
 					pass
 
-			# Raw JSON inside a script tag
 			if txt.startswith('{') or txt.startswith('['):
 				try:
 					data = json.loads(txt)
 					break
 				except Exception:
 					pass
-
-			# window.__INITIAL_STATE__ = { ... } patterns
 			m = re.search(r'window\.__INITIAL_STATE__\s*=\s*({.*?});', txt, re.S)
 			if m:
 				try:
@@ -72,8 +66,6 @@ class KickProfile(commands.Cog):
 					break
 				except Exception:
 					pass
-
-		# Helper: recursively search for keys (case-insensitive)
 		def recursive_search(obj, key_names):
 			if obj is None:
 				return None
@@ -244,4 +236,5 @@ class KickProfile(commands.Cog):
 
 async def setup(bot):
 	await bot.add_cog(KickProfile(bot))
+
 
