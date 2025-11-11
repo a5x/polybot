@@ -31,7 +31,10 @@ class Crew(commands.Cog):
     )
     async def crew(self, interaction: discord.Interaction, bearer_token: str, crew_name: str):
         # Réponse invisible aux autres utilisateurs
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
+# ou juste
+        await interaction.response.defer()
+
 
         api_base_url = "https://scapi.rockstargames.com/crew/byname"
         params = {"name": crew_name}
