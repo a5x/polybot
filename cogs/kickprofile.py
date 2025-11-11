@@ -172,7 +172,15 @@ class KickProfile(commands.Cog):
 			embed.add_field(name="Créé le", value=created_date, inline=True)
 
 		if user_fields.get('email_verified_at'):
-			embed.add_field(name="Email vérifié le", value=user_fields.get('email_verified_at'), inline=True)
+			email_verified_date = user_fields.get('email_verified_at')
+			if email_verified_date and 'T' in str(email_verified_date):
+				try:
+					from datetime import datetime
+					dt = datetime.fromisoformat(str(email_verified_date).replace('Z', '+00:00'))
+					email_verified_date = dt.strftime("%d/%m/%Y à %H:%M")
+				except Exception:
+					pass
+			embed.add_field(name="Email vérifié le", value=email_verified_date, inline=True)
 
 		socials = []
 		for s in ('instagram', 'twitter', 'youtube', 'tiktok', 'discord', 'facebook'):
