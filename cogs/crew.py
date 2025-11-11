@@ -24,46 +24,39 @@ class Crew(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         api_base_url = "https://scapi.rockstargames.com/crew/byname"
-        
-        # Paramètres pour la recherche
         params = {"name": crew_name}
 
         try:
             async with aiohttp.ClientSession(headers=self._headers(bearer_token)) as session:
                 async with session.get(api_base_url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status == 401:
-                        await interaction.followup.send(
-                            "❌ Bearer Token invalide ou expiré."
-                        )
+                        await interaction.followup.send("❌ Bearer Token invalide ou expiré.")
                         return
                     elif resp.status != 200:
-                        await interaction.followup.send(
-                            f"❌ Erreur lors de la connexion à l'API (code: {resp.status})"
-                        )
+                        await interaction.followup.send(f"❌ Erreur lors de la connexion à l'API (code: {resp.status})")
                         return
 
                     data = await resp.json()
 
-            # Vérifier si le crew a été trouvé
-            if not data.get("status"):
-                await interaction.followup.send(
-                    f"❌ Aucun crew trouvé avec le nom '{crew_name}'"
-                )
+            # Vérifier si des crews ont été trouvés
+            crews = data.get("Crews")
+            if not crews:
+                await interaction.followup.send(f"❌ Aucun crew trouvé avec le nom '{crew_name}'")
                 return
 
-            crew = data
+            crew = crews[0]  # Premier résultat
 
             # Extraire les informations
-            crew_name_display = crew.get("CrewName", "N/A")
-            crew_tag = crew.get("CrewTag", "N/A")
-            crew_motto = crew.get("motto", "N/A")
+            crew_name_display = crew.get("name", "N/A")
+            crew_tag = crew.get("tag", "N/A")
+            crew_motto = crew.get("motto", "Aucune devise")
             member_count = crew.get("memberCount", 0)
             is_private = crew.get("isPrivate", False)
             is_dev = crew.get("isSystemCrew", False)
             crew_color_hex = crew.get("color", "#FFFFFF")
             crew_id = crew.get("crewId", "N/A")
 
-            # Créer l'embed
+            # Créer l'embed Discord
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto if crew_motto else "Aucune devise",
@@ -71,44 +64,19 @@ class Crew(commands.Cog):
                 color=int(crew_color_hex.replace("#", ""), 16) if crew_color_hex else discord.Color.blue().value
             )
 
-            # Ajouter les champs
-            embed.add_field(
-                name="👥 Nombre de membres",
-                value=f"{member_count:,}",
-                inline=True
-            )
-
-            embed.add_field(
-                name="🔒 Privé",
-                value="✅ Oui" if is_private else "❌ Non",
-                inline=True
-            )
-
-            embed.add_field(
-                name="⭐ Crew Dev",
-                value="✅ Oui" if is_dev else "❌ Non",
-                inline=True
-            )
-
-            embed.add_field(
-                name="🏷️ Tag",
-                value=crew_tag,
-                inline=True
-            )
-
-            embed.add_field(
-                name="🆔 Crew ID",
-                value=crew_id,
-                inline=True
-            )
+            embed.add_field(name="👥 Membres", value=f"{member_count:,}", inline=True)
+            embed.add_field(name="🔒 Privé", value="✅ Oui" if is_private else "❌ Non", inline=True)
+            embed.add_field(name="⭐ Crew Dev", value="✅ Oui" if is_dev else "❌ Non", inline=True)
+            embed.add_field(name="🏷️ Tag", value=crew_tag, inline=True)
+            embed.add_field(name="🆔 Crew ID", value=crew_id, inline=True)
 
             embed.set_footer(text="Powered by Rockstar Social Club API")
 
             await interaction.followup.send(embed=embed)
 
         except aiohttp.ClientError as e:
-            await interaction.followup.send(
-                f"❌ Erreur de connexion: {str(e)}"
-            )
+            await interaction.followup.send(f"❌ Erreur de connexion: {str(e)}")
+
+
 async def setup(bot):
     await bot.add_cog(Crew(bot))
