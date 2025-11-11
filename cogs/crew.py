@@ -96,13 +96,13 @@ class Crew(commands.Cog):
                 color_value = discord.Color.blue().value
 
             # Générer le lien de l’emblème
-            emblem_url = f"https://prod.cloud.rockstargames.com/crews/sc/{shard_id}/{crew_id}/publish/emblem/emblem_128.png"
+            emblem_url = f"https://prod.cloud.rockstargames.com/crews/sc/6666/{crew_id}/publish/emblem/emblem_128.png"
 
             # Construction embed
             embed = discord.Embed(
                 title=f"[{crew_tag}] {crew_name_display}",
                 description=crew_motto,
-                url=f"https://socialclub.rockstargames.com/crew/{crew_id}",
+                url=f"https://socialclub.rockstargames.com/crew/{crew_name_display}",
                 color=color_value
             )
 
