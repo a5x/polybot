@@ -11,7 +11,7 @@ import time
 import asyncio
 import requests
 
-NPSO_TOKEN = os.getenv("PSN_NPSSO", "Y6MCvTg1GCZG7ISqfFVEcE6wv4s4ehprACZgX2oeff6a2PoJ5lGhpSzrAHgw7bDc")
+NPSO_TOKEN = os.getenv("PSN_NPSSO", "ZqjNWj2q5RZQJwsrPbFneFdhg15r4coQme0jh465FoM9H9J8gw6sGDaDfaoci72f")
 psnawp    = PSNAWP(NPSO_TOKEN)
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -580,5 +580,6 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
+
 
 
