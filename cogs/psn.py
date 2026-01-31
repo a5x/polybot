@@ -440,8 +440,8 @@ class Psn(commands.Cog):
         
         now = time.time()
         last = self._last_psn.get(interaction.user.id)
-        if last and (now - last) < 30:
-            remaining = int(30 - (now - last))
+        if last and (now - last) < 5:
+            remaining = int(5 - (now - last))
             return await interaction.response.send_message(f"Vous devez attendre {remaining}s avant de réutiliser cette commande.", ephemeral=True)
         self._last_psn[interaction.user.id] = now
 
@@ -580,6 +580,7 @@ class Psn(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Psn(bot))
+
 
 
 
