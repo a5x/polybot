@@ -50,6 +50,7 @@ COGS = [
     "cogs.db",
     "cogs.kickprofile",
     "cogs.crew",
+    "cogs.psn_mass",
 ]
 
 async def load_extensions(bot: commands.Bot):
