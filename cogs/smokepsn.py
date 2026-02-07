@@ -16,6 +16,7 @@ class SmokePsnView(discord.ui.View):
         )
         embed.set_footer(text="Status: Temp")
         await interaction.response.edit_message(embed=embed)
+        await interaction.followup.send(f"Vous avez choisi **Temp** pour le PSN `{self.psn}`.", ephemeral=True)
 
     @discord.ui.button(label="Fail", style=discord.ButtonStyle.blurple)
     async def fail_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -26,6 +27,7 @@ class SmokePsnView(discord.ui.View):
         )
         embed.set_footer(text="Status: Fail")
         await interaction.response.edit_message(embed=embed)
+        await interaction.followup.send(f"Vous avez choisi **Fail** pour le PSN `{self.psn}`.", ephemeral=True)
 
 class SmokePsn(commands.Cog):
     def __init__(self, bot):
