@@ -4,6 +4,7 @@ from discord.ext import commands
 from psnawp_api import PSNAWP
 import asyncio
 import string
+import os
 
 NPSO_TOKEN = os.getenv("PSN_NPSSO", "Gtg5bgo6dpZ8jAqKbdFFCdTtbJL6zzXQ7X8viyYkzEaURAIvuMrv8nn5Z7HlMxut")
 psnawp = PSNAWP(NPSO_TOKEN)
@@ -11,13 +12,24 @@ psnawp = PSNAWP(NPSO_TOKEN)
 class PsnMass(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self._last_psnmass = {}
 
     @app_commands.command(name="psnmass", description="Vérifie toutes les combinaisons possibles d'un PSN de base.")
     @app_commands.describe(base_psn="Le PSN de base à utiliser pour générer les combinaisons.")
     async def psnmass(self, interaction: discord.Interaction, base_psn: str):
+        # Vérification de la longueur du PSN de base
         if len(base_psn) > 4:
             await interaction.response.send_message("Le PSN de base doit contenir 4 caractères ou moins.", ephemeral=True)
             return
+
+        # Anti-spam : délai entre les commandes
+        now = asyncio.get_event_loop().time()
+        last = self._last_psnmass.get(interaction.user.id)
+        if last and (now - last) < 10:
+            remaining = int(10 - (now - last))
+            await interaction.response.send_message(f"Vous devez attendre {remaining}s avant de réutiliser cette commande.", ephemeral=True)
+            return
+        self._last_psnmass[interaction.user.id] = now
 
         await interaction.response.defer()
 
@@ -30,6 +42,8 @@ class PsnMass(commands.Cog):
             try:
                 user = psnawp.user(online_id=psn)
                 profile = user.profile()
+
+                # Récupérer les informations nécessaires
                 country = user.get_region().name if user.get_region() else "Inconnu"
                 new_online_id = user.online_id
 
@@ -60,8 +74,11 @@ class PsnMass(commands.Cog):
             embeds.append(embed)
 
         # Envoyer les embeds
-        for embed in embeds:
-            await interaction.followup.send(embed=embed)
+        if not embeds:
+            await interaction.followup.send("Aucun résultat trouvé pour les combinaisons générées.")
+        else:
+            for embed in embeds:
+                await interaction.followup.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(PsnMass(bot))
