@@ -15,8 +15,12 @@ class SmokePsnView(discord.ui.View):
             color=discord.Color.red()
         )
         embed.set_footer(text="Status: Temp")
-        await interaction.response.edit_message(embed=embed)
-        await interaction.followup.send(f"Vous avez choisi **Temp** pour le PSN `{self.psn}`.", ephemeral=True)
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.followup.send(
+            f"Statut défini sur **Temp** pour le PSN `{self.psn}`.",
+            ephemeral=True
+        )
 
     @discord.ui.button(label="Fail", style=discord.ButtonStyle.blurple)
     async def fail_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -26,25 +30,32 @@ class SmokePsnView(discord.ui.View):
             color=discord.Color.blue()
         )
         embed.set_footer(text="Status: Fail")
-        await interaction.response.edit_message(embed=embed)
-        await interaction.followup.send(f"Vous avez choisi **Fail** pour le PSN `{self.psn}`.", ephemeral=True)
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.followup.send(
+            f"Statut défini sur **Fail** pour le PSN `{self.psn}`.",
+            ephemeral=True
+        )
 
 class SmokePsn(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="smokepsn", description="Envoyer un PSN avec des boutons Temp et Fail.")
+    @app_commands.command(
+        name="smokepsn",
+        description="Envoyer un PSN avec statut en attente et boutons Temp / Fail."
+    )
     @app_commands.describe(psn="Le PSN à afficher.")
     async def smokepsn(self, interaction: discord.Interaction, psn: str):
         embed = discord.Embed(
             title="Smoke PSN",
             description=f"PSN : `{psn}`",
-            color=discord.Color.red()
+            color=discord.Color.orange()
         )
-        embed.set_footer(text="Status: Temp")
+        embed.set_footer(text="Status: En attente")
+
         view = SmokePsnView(psn)
         await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(SmokePsn(bot))
-
