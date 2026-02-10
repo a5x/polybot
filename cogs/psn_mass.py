@@ -6,7 +6,7 @@ import asyncio
 import string
 import os
 
-# Token PSN
+# Token PS
 NPSO_TOKEN = os.getenv(
     "PSN_NPSSO",
     "Gtg5bgo6dpZ8jAqKbdFFCdTtbJL6zzXQ7X8viyYkzEaURAIvuMrv8nn5Z7HlMxut"
@@ -133,3 +133,4 @@ class PsnMass(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(PsnMass(bot))
+
