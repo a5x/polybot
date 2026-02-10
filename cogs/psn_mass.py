@@ -20,17 +20,17 @@ class PsnMass(commands.Cog):
 
     @app_commands.command(
         name="psnmass",
-        description="Vérifie toutes les combinaisons possibles d'un PSN de base."
+        description="Recherche les PSN existants en ajoutant une lettre."
     )
     @app_commands.describe(
-        base_psn="PSN de base (4 caractères max)",
+        base_psn="PSN de base (2 ou 3 caractères)",
         mode="Position de la lettre",
-        index="Position d'insertion (uniquement pour placement personnalisé)"
+        index="Index d'insertion (utilisé seulement si mode = custom)"
     )
     @app_commands.choices(mode=[
         app_commands.Choice(name="Après le PSN (PSNa)", value="after"),
         app_commands.Choice(name="Avant le PSN (aPSN)", value="before"),
-        app_commands.Choice(name="Placement personnalisé", value="custom")
+        app_commands.Choice(name="Placement personnalisé (PSaN)", value="custom")
     ])
     async def psnmass(
         self,
@@ -39,21 +39,21 @@ class PsnMass(commands.Cog):
         mode: app_commands.Choice[str],
         index: int | None = None
     ):
-        # Vérification longueur
-        if len(base_psn) > 2:
+        # Validation longueur (2 ou 3 UNIQUEMENT)
+        if len(base_psn) not in (2, 3):
             await interaction.response.send_message(
-                "❌ Le PSN de base doit contenir 4 caractères ou moins.",
+                "❌ Le PSN de base doit contenir **2 ou 3 caractères**.",
                 ephemeral=True
             )
             return
 
-        # Anti-spam (10s)
+        # Anti-spam 10s
         now = asyncio.get_event_loop().time()
         last = self._last_psnmass.get(interaction.user.id)
         if last and (now - last) < 10:
             remaining = int(10 - (now - last))
             await interaction.response.send_message(
-                f"⏳ Attendez encore {remaining}s avant de réutiliser cette commande.",
+                f"⏳ Attendez {remaining}s avant de réutiliser la commande.",
                 ephemeral=True
             )
             return
@@ -75,14 +75,14 @@ class PsnMass(commands.Cog):
             elif mode.value == "custom":
                 if index is None:
                     await interaction.followup.send(
-                        "⚠️ Vous devez fournir un index pour le placement personnalisé.",
+                        "⚠️ Vous devez préciser **index** pour le placement personnalisé.",
                         ephemeral=True
                     )
                     return
 
                 if index < 0 or index > len(base_psn):
                     await interaction.followup.send(
-                        f"⚠️ L'index doit être compris entre 0 et {len(base_psn)}.",
+                        f"⚠️ L'index doit être entre **0 et {len(base_psn)}**.",
                         ephemeral=True
                     )
                     return
@@ -97,49 +97,39 @@ class PsnMass(commands.Cog):
         for psn in combinations:
             try:
                 user = psnawp.user(online_id=psn)
-                profile = user.profile()
+                user.profile()
 
                 country = user.get_region().name if user.get_region() else "Inconnu"
-                new_online_id = user.online_id
 
                 results.append({
                     "psn": psn,
-                    "country": country,
-                    "new_online_id": new_online_id
+                    "country": country
                 })
 
             except Exception:
                 pass
 
-            await asyncio.sleep(1)  # anti rate-limit
+            await asyncio.sleep(1)
 
-        # Tri par pays
-        results.sort(key=lambda x: x["country"])
+        # Embeds
+        if not results:
+            await interaction.followup.send("❌ Aucun PSN trouvé.")
+            return
 
-        # Création des embeds
-        embeds = []
-        for i in range(0, len(results), 10):
-            embed = discord.Embed(
-                title="Résultats de la recherche PSN",
-                color=0x0094FF
+        embed = discord.Embed(
+            title="Résultats PSN",
+            description=f"Mode : **{mode.name}**",
+            color=0x0094FF
+        )
+
+        for r in results[:25]:
+            embed.add_field(
+                name=r["psn"],
+                value=f"🌍 Pays : {r['country']}",
+                inline=False
             )
-            for result in results[i:i + 10]:
-                embed.add_field(
-                    name=result["psn"],
-                    value=(
-                        f"🌍 Pays : {result['country']}\n"
-                        f"🆔 Online ID : {result['new_online_id']}"
-                    ),
-                    inline=False
-                )
-            embeds.append(embed)
 
-        # Envoi
-        if not embeds:
-            await interaction.followup.send("❌ Aucun PSN valide trouvé.")
-        else:
-            for embed in embeds:
-                await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(PsnMass(bot))
