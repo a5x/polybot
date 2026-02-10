@@ -97,13 +97,18 @@ class PsnMass(commands.Cog):
         for psn in combinations:
             try:
                 user = psnawp.user(online_id=psn)
-                user.profile()
+                profile = user.profile()
 
                 country = user.get_region().name if user.get_region() else "Inconnu"
+                current_online_id = user.online_id
+
+                # Détection changement d'Online ID
+                has_new_id = current_online_id.lower() != psn.lower()
 
                 results.append({
                     "psn": psn,
-                    "country": country
+                    "country": country,
+                    "new_id": current_online_id if has_new_id else None
                 })
 
             except Exception:
@@ -111,7 +116,6 @@ class PsnMass(commands.Cog):
 
             await asyncio.sleep(1)
 
-        # Embeds
         if not results:
             await interaction.followup.send("❌ Aucun PSN trouvé.")
             return
@@ -123,9 +127,13 @@ class PsnMass(commands.Cog):
         )
 
         for r in results[:25]:
+            value = f"🌍 Pays : {r['country']}"
+            if r["new_id"]:
+                value += f"\n🔁 Nouvel Online ID : **{r['new_id']}**"
+
             embed.add_field(
                 name=r["psn"],
-                value=f"🌍 Pays : {r['country']}",
+                value=value,
                 inline=False
             )
 
@@ -133,4 +141,3 @@ class PsnMass(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(PsnMass(bot))
-
